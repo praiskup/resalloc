@@ -1,0 +1,89 @@
+#!/usr/bin/env python
+
+# Resalloc server.
+# Copyright (C) 2017 Red Hat, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+import time
+import threading
+
+from resalloc.server import db, models
+from resalloc.server.manager import Manager
+
+PORT = 8000
+CLSXMLRPC = None
+
+try:
+    import SimpleXMLRPCServer
+    import SocketServer
+    class wrap(SocketServer.ThreadingMixIn, SimpleXMLRPCServer.SimpleXMLRPCServer):
+        pass
+    CLSXMLRPC = wrap
+except:
+    import xmlrpc.server
+    import socketserver
+    class wrap(socketserver.ThreadingMixIn, xmlrpc.server.SimpleXMLRPCServer):
+        pass
+    CLSXMLRPC = wrap
+
+
+class ServerAPI(object):
+    def __init__(self, event):
+        self.event = event
+
+    def hello(self, name="\"unknown tester\""):
+        # session = db.SessionFactory()
+        # department = models.Department()
+        # department.name = "bedrich"
+        # session.add(department)
+        # session.commit()
+
+        # Notify the server.
+        self.event.set()
+
+        return str(threading.current_thread().ident)
+
+
+class Server(threading.Thread):
+    server = None
+
+    def run(self):
+        self.server = CLSXMLRPC(("localhost", 8000))
+        self.server.daemon_threads = True
+        self.server.register_introspection_functions()
+        api = ServerAPI(event)
+        self.server.register_instance(api)
+        self.server.serve_forever()
+
+    def shutdown(self):
+        self.server.shutdown()
+
+
+if __name__ == "__main__":
+    # Create the database, if not exist yet.
+    session = db.SessionFactory()
+    models.Base.metadata.create_all(session.get_bind())
+
+    # Synchronization tool.
+    event = threading.Event()
+
+    server = Server()
+    try:
+        server.start()
+        manager = Manager(event)
+        manager.run()
+    except:
+        server.shutdown()

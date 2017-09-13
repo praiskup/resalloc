@@ -17,10 +17,20 @@
 
 import threading
 from resalloc.server import db, models
+from resalloc import helpers
 from sqlalchemy import or_
 
+
+class RState(helpers.StateSet):
+    values = [
+        'STARTING',
+        'READY',
+    ]
+
+
 class AllocWorker(threading.Thread):
-    def __init__(self, event):
+    def __init__(self, event, res_id):
+        self.resource_id = res_id
         self.event = event
         threading.Thread.__init__(self)
 
@@ -28,11 +38,17 @@ class AllocWorker(threading.Thread):
         # Run the allocation script.
 
         import time
-        time.sleep(10)
-        print("timed out worker\n")
+        time.sleep(4)
+        print("finished worker {0}".format(self.resource_id))
+
+        session = db.SessionFactory()
+        resource = session.query(models.Resource).get(self.resource_id)
+        resource.state = 'READY'
+        session.add(resource)
+        session.commit()
+
         # Notify manager that it is worth doing re-spin.
-        # Set the status to "ready" in db.
-        event.set()
+        self.event.set()
 
 
 class Pool(object):
@@ -40,50 +56,40 @@ class Pool(object):
     max_starting = 3
     max_preallocated = 5
 
-    def __init__(self, name):
+    def __init__(self, name, session, event):
+        print("new pool " + name)
         self.name = name
+        self.session = session
+        self.event = event
 
-    def allocate(self, event):
-        pass
+    def allocate(self):
+        resource = models.Resource()
+        resource.pool = self.name
+        self.session.add(resource)
+        self.session.commit()
+        print ("allocating id {0}".format(resource.id))
+        AllocWorker(self.event, resource.id).start()
 
-
-    def _allocate_more_resources(self, session, event):
+    def _allocate_more_resources(self):
         while True:
-            all_query = session.query(models.Resource).filter_by(pool=self.name)
+            all_query = self.session.query(models.Resource).filter_by(pool=self.name)
             all_up = all_query.count()
             # STARTING -> READY -> TAKEN
-            ready = all_query.filter(models.Resource.state.in_(['READY', 'STARTING'])).count()
-            starting = all_query.filter(models.Resource.state.in_(['STARTING'])).count()
+            ready = all_query.filter(models.Resource.state.in_([RState.READY, RState.STARTING])).count()
+            starting = all_query.filter(models.Resource.state.in_([RState.STARTING])).count()
 
             print("ready {0}, starting {1}".format(ready, starting))
-
-            if all_up >= self.max_number or ready >= self.max_preallocated or starting >= self.max_starting:
+            if all_up >= self.max_number \
+                   or ready >= self.max_preallocated \
+                   or starting >= self.max_starting:
                 break
 
-            # resource = models.Resource()
-            # resource.pool = self.name
-            # session.add(resource)
-            # session.commit()
-
-            # self.allocate(event)
-
-        #     working + ready
-        #     on = ... from db ...
-        #     ready = ... from db ...
-        #     max = ... from config ...
-        #     max_preallocate = ...
-        #     for _ in range(0, pool.alloc_strategy.alloc_more(... params ...)):
-        #         # Create the resource in DB, with all the parameters
-        #         ...
-        #         # Run the allocator
-        #         AllocWorker(self.event)
-        pass
+            self.allocate()
 
 
 class Manager(object):
     def __init__(self, event):
         self.event = event
-        threading.Thread.__init__(self)
 
     def _assign_tickets(self, session):
         # # Assign tickets with resources.
@@ -98,23 +104,26 @@ class Manager(object):
         pass
 
 
-    def _reload_config(self):
-        return [Pool('starting')]
+    def _reload_config(self, session):
+        print("loading config")
+        pool = Pool('test_pool', session, self.event)
+        return [pool]
 
 
     def _loop(self):
         session = db.SessionFactory()
         self._assign_tickets(session)
-        pools = self._reload_config()
+        pools = self._reload_config(session)
         for pool in pools:
-            pool._allocate_more_resources(session, self.event)
-        print("loop done... {0}".format(threading.get_ident()))
+            pool._allocate_more_resources()
+        print("loop done...")
 
 
     def run(self):
+        self._loop()
         while True:
             # Wait for the request to set the event (or timeout).
-            self.event.wait(timeout=15)
+            self.event.wait(timeout=20)
             self.event.clear()
             # Until the wait() is called again, any additional event.set() call
             # means another round (even though it might do nothing).

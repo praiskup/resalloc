@@ -17,7 +17,7 @@
 
 import os
 import yaml
-from resalloc.helpers import merge_dict
+from resalloc.helpers import merge_dict, load_config_file
 
 config_dir = "/etc/resalloc"
 if 'CONFIG_DIR' in os.environ:
@@ -28,11 +28,8 @@ CONFIG = {
     'db_url': 'sqlite:////tmp/test-db.sqlite',
 }
 
+
+CONFIG_DIR = config_dir
+
 config_file = os.path.join(config_dir, 'server.yaml')
-with open(config_file, 'r') as fd:
-    config = yaml.load(fd)
-    if not config:
-        config = {}
-    if not type(config) == dict:
-        raise Exception("Configuration is not dictionary")
-    CONFIG = merge_dict(CONFIG, config)
+CONFIG = merge_dict(CONFIG, load_config_file(config_file))

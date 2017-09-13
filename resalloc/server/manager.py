@@ -15,9 +15,11 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import os
 import threading
 from resalloc.server import db, models
 from resalloc import helpers
+from resalloc.server.config import CONFIG_DIR
 from sqlalchemy import or_
 
 
@@ -52,9 +54,9 @@ class AllocWorker(threading.Thread):
 
 
 class Pool(object):
-    max_number = 7
+    max = 7
     max_starting = 3
-    max_preallocated = 5
+    max_prealloc = 5
 
     def __init__(self, name, session, event):
         print("new pool " + name)
@@ -70,6 +72,27 @@ class Pool(object):
         print ("allocating id {0}".format(resource.id))
         AllocWorker(self.event, resource.id).start()
 
+    def from_dict(self, data):
+        allowed_types = [int, str, dict]
+
+        if type(data) != dict:
+            # TODO: warning
+            return
+
+        for key in data:
+            if not hasattr(self, key):
+                continue
+
+            local = getattr(self, key)
+            conf_type = type(local)
+            if not conf_type in allowed_types:
+                continue
+
+            if conf_type == dict:
+                setattr(self, key, merge_dict(local, data[key]))
+            else:
+                setattr(self, key, data[key])
+
     def _allocate_more_resources(self):
         while True:
             all_query = self.session.query(models.Resource).filter_by(pool=self.name)
@@ -78,9 +101,9 @@ class Pool(object):
             ready = all_query.filter(models.Resource.state.in_([RState.READY, RState.STARTING])).count()
             starting = all_query.filter(models.Resource.state.in_([RState.STARTING])).count()
 
-            print("ready {0}, starting {1}".format(ready, starting))
-            if all_up >= self.max_number \
-                   or ready >= self.max_preallocated \
+            print("pool {0}, ready {1}, starting {2}".format(self.name, ready, starting))
+            if all_up >= self.max \
+                   or ready >= self.max_prealloc \
                    or starting >= self.max_starting:
                 break
 
@@ -105,9 +128,16 @@ class Manager(object):
 
 
     def _reload_config(self, session):
-        print("loading config")
-        pool = Pool('test_pool', session, self.event)
-        return [pool]
+        config_file = os.path.join(CONFIG_DIR, "pools.yaml")
+        config = helpers.load_config_file(config_file)
+
+        pools = []
+        for pool_id in config:
+            pool = Pool(pool_id, session, self.event)
+            pool.from_dict(config[pool_id])
+            pools.append(pool)
+
+        return pools
 
 
     def _loop(self):

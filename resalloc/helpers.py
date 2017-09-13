@@ -15,9 +15,10 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import sys
+import os, sys
 import copy
 import six
+import yaml
 
 class StateSetException(Exception):
     def __init__(self, message):
@@ -57,3 +58,13 @@ def merge_dict(origin, override):
     old = copy.deepcopy(origin)
     new = copy.deepcopy(override)
     return _merge_dict(old, new)
+
+
+def load_config_file(path):
+    with open(path, 'r') as fd:
+        config = yaml.load(fd)
+        if not config:
+            config = {}
+        if not type(config) == dict:
+            raise Exception("Configuration is not dictionary")
+        return config

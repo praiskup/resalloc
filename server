@@ -21,5 +21,6 @@ proj_cli_dir="$(dirname "$(readlink -f "$0")")"
 
 export PYTHON=${PYTHON:-`which python3`}
 export PYTHONPATH="$proj_cli_dir${PYTHONPATH+:$PYTHONPATH}"
+export CONFIG_DIR=$proj_cli_dir/etc
 
 $PYTHON $proj_cli_dir/bin/server "$@"

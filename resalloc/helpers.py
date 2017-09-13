@@ -16,6 +16,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import sys
+import copy
+import six
 
 class StateSetException(Exception):
     def __init__(self, message):
@@ -35,3 +37,23 @@ class StateSetMeta(type):
 StateSet = StateSetMeta(str('StateSet'), (), {
     '__doc__': 'Set of states',
     })
+
+
+def merge_dict(origin, override):
+    def _merge_dict(origin, override):
+        """
+        Merge simple dict recursively.  If the node is non-dict, return itself,
+        otherwise recurse down for each item.
+        """
+        if isinstance(origin, dict) and isinstance(override, dict):
+            for k, v in six.iteritems(override):
+                if k in origin:
+                    origin[k] = _merge_dict(origin[k], override[k])
+                else:
+                    origin[k] = copy.deepcopy(override[k])
+            return origin
+
+        return copy.deepcopy(override)
+    old = copy.deepcopy(origin)
+    new = copy.deepcopy(override)
+    return _merge_dict(old, new)

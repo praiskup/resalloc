@@ -15,6 +15,24 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import os
+import yaml
+from resalloc.helpers import merge_dict
+
+config_dir = "/etc/resalloc"
+if 'CONFIG_DIR' in os.environ:
+    config_dir = os.environ['CONFIG_DIR']
+
+# Setup defaults.
 CONFIG = {
     'db_url': 'sqlite:////tmp/test-db.sqlite',
 }
+
+config_file = os.path.join(config_dir, 'server.yaml')
+with open(config_file, 'r') as fd:
+    config = yaml.load(fd)
+    if not config:
+        config = {}
+    if not type(config) == dict:
+        raise Exception("Configuration is not dictionary")
+    CONFIG = merge_dict(CONFIG, config)

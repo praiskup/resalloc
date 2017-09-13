@@ -1,0 +1,2 @@
+# SQLALCHEMY connection url.
+db_url: 'sqlite:////tmp/resalloc-db.sqlite'

@@ -80,10 +80,14 @@ if __name__ == "__main__":
     # Synchronization tool.
     event = threading.Event()
 
+    # Start server on background.
     server = Server()
+    server.start()
+
     try:
-        server.start()
         manager = Manager(event)
         manager.run()
     except KeyboardInterrupt:
+        pass
+    finally:
         server.shutdown()

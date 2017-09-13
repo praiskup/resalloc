@@ -15,7 +15,7 @@ if os.path.exists(local_configdir):
 sys.path = [additional_path] + sys.path
 
 from resalloc.server.config import CONFIG
-from resalloc.server.db import engine
+from resalloc.server.db import EngineSingleton
 from resalloc.server.models import Base
 
 # this is the Alembic Config object, which provides
@@ -64,7 +64,7 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
-    connectable = engine
+    connectable = EngineSingleton()
     with connectable.connect() as connection:
         context.configure(
             connection=connection,

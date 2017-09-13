@@ -17,6 +17,7 @@
 
 import os
 import threading
+import subprocess
 from resalloc.server import db, models
 from resalloc import helpers
 from resalloc.server.config import CONFIG_DIR
@@ -27,53 +28,66 @@ class RState(helpers.StateSet):
     values = [
         'STARTING',
         'READY',
+        # This should be properly stopped instance, without any leftover
+        # allocated resources.  The database entries may be garbage collected.
+        'ENDED',
     ]
 
 
 class AllocWorker(threading.Thread):
-    def __init__(self, event, res_id):
+    def __init__(self, event, pool, res_id):
         self.resource_id = res_id
+        self.pool = pool
         self.event = event
         threading.Thread.__init__(self)
 
     def run(self):
         # Run the allocation script.
 
-        import time
-        time.sleep(4)
-        print("finished worker {0}".format(self.resource_id))
+        print("running spinup command: {0}".format(self.pool.cmd_new))
+        retval = subprocess.call(self.pool.cmd_new, shell=True)
 
         session = db.SessionFactory()
         resource = session.query(models.Resource).get(self.resource_id)
-        resource.state = 'READY'
+        resource.state = RState.ENDED if retval else RState.READY
+        print("the state == " + resource.state)
         session.add(resource)
         session.commit()
+        session.close()
 
         # Notify manager that it is worth doing re-spin.
         self.event.set()
 
 
 class Pool(object):
-    max = 7
-    max_starting = 3
-    max_prealloc = 5
+    max = 4
+    max_starting = 1
+    max_prealloc = 2
 
-    def __init__(self, name, session, event):
+    cmd_new = None
+    cmd_delete = None
+    cmd_livecheck = None
+
+    def __init__(self, name, event):
         print("new pool " + name)
         self.name = name
-        self.session = session
         self.event = event
 
-    def allocate(self):
+    def validate(self):
+        assert(self.cmd_new)
+        assert(self.cmd_delete)
+
+    def allocate(self, session):
         resource = models.Resource()
         resource.pool = self.name
-        self.session.add(resource)
-        self.session.commit()
+
+        session.add(resource)
+        session.commit()
         print ("allocating id {0}".format(resource.id))
-        AllocWorker(self.event, resource.id).start()
+        AllocWorker(self.event, self, int(resource.id)).start()
 
     def from_dict(self, data):
-        allowed_types = [int, str, dict]
+        allowed_types = [int, str, dict, type(None)]
 
         if type(data) != dict:
             # TODO: warning
@@ -81,6 +95,7 @@ class Pool(object):
 
         for key in data:
             if not hasattr(self, key):
+                print("useless config " + key)
                 continue
 
             local = getattr(self, key)
@@ -93,11 +108,12 @@ class Pool(object):
             else:
                 setattr(self, key, data[key])
 
-    def _allocate_more_resources(self):
+    def _allocate_more_resources(self, session):
         while True:
-            all_query = self.session.query(models.Resource).filter_by(pool=self.name)
+            all_query = (session.query(models.Resource)
+                                .filter_by(pool=self.name)
+                                .filter(models.Resource.state.isnot(RState.ENDED)))
             all_up = all_query.count()
-            # STARTING -> READY -> TAKEN
             ready = all_query.filter(models.Resource.state.in_([RState.READY, RState.STARTING])).count()
             starting = all_query.filter(models.Resource.state.in_([RState.STARTING])).count()
 
@@ -105,16 +121,17 @@ class Pool(object):
             if all_up >= self.max \
                    or ready >= self.max_prealloc \
                    or starting >= self.max_starting:
+                # Quota reached, don't allocate more.
                 break
 
-            self.allocate()
+            self.allocate(session)
 
 
 class Manager(object):
     def __init__(self, event):
         self.event = event
 
-    def _assign_tickets(self, session):
+    def _assign_tickets(self):
         # # Assign tickets with resources.
         # tickets = select_in_new_state.order_by id
         # for ticket in tickets:
@@ -127,14 +144,15 @@ class Manager(object):
         pass
 
 
-    def _reload_config(self, session):
+    def _reload_config(self):
         config_file = os.path.join(CONFIG_DIR, "pools.yaml")
         config = helpers.load_config_file(config_file)
 
         pools = []
         for pool_id in config:
-            pool = Pool(pool_id, session, self.event)
+            pool = Pool(pool_id, self.event)
             pool.from_dict(config[pool_id])
+            pool.validate()
             pools.append(pool)
 
         return pools
@@ -142,10 +160,11 @@ class Manager(object):
 
     def _loop(self):
         session = db.SessionFactory()
-        self._assign_tickets(session)
-        pools = self._reload_config(session)
+        self._assign_tickets()
+        pools = self._reload_config()
         for pool in pools:
-            pool._allocate_more_resources()
+            pool._allocate_more_resources(session)
+        session.close()
         print("loop done...")
 
 

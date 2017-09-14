@@ -42,10 +42,3 @@ class ResourceTag(Base):
     id = Column(String, primary_key=True)
     resource_id = Column(Integer, ForeignKey('resources.id'), primary_key=True)
     resource = relationship('Resource', backref=backref('tags'))
-
-
-class ResourcePurpose(Base):
-    __tablename__ = 'resource_purposes'
-    id = Column(String, primary_key=True)
-    resource_id = Column(Integer, ForeignKey('resources.id'), primary_key=True)
-    resource = relationship('Resource', backref=backref('purposes'))

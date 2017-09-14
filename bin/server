@@ -20,7 +20,7 @@
 import time
 import threading
 
-from resalloc.server import db, models
+from resalloc.server import db, models, api
 from resalloc.server.manager import Manager
 
 PORT = 8000
@@ -40,23 +40,6 @@ except:
     CLSXMLRPC = wrap
 
 
-class ServerAPI(object):
-    def __init__(self, event):
-        self.event = event
-
-    def hello(self, name="\"unknown tester\""):
-        # session = db.SessionFactory()
-        # department = models.Department()
-        # department.name = "bedrich"
-        # session.add(department)
-        # session.commit()
-
-        # Notify the server.
-        self.event.set()
-
-        return str(threading.current_thread().ident)
-
-
 class Server(threading.Thread):
     server = None
 
@@ -64,8 +47,7 @@ class Server(threading.Thread):
         self.server = CLSXMLRPC(("localhost", 8000))
         self.server.daemon_threads = True
         self.server.register_introspection_functions()
-        api = ServerAPI(event)
-        self.server.register_instance(api)
+        self.server.register_instance(api.ServerAPI(event))
         self.server.serve_forever()
 
     def shutdown(self):
@@ -85,8 +67,7 @@ if __name__ == "__main__":
     server.start()
 
     try:
-        manager = Manager(event)
-        manager.run()
+        Manager(event).run()
     except KeyboardInterrupt:
         pass
     finally:

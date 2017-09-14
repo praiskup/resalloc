@@ -45,13 +45,31 @@ class AllocWorker(threading.Thread):
         # Run the allocation script.
 
         print("running spinup command: {0}".format(self.pool.cmd_new))
-        retval = subprocess.call(self.pool.cmd_new, shell=True)
+        retval = 0
+        output = ''
+        try:
+            output = subprocess.check_output(self.pool.cmd_new, shell=True)
+        except subprocess.CalledProcessError as e:
+            output = e.output
+            retval = e.returncode
 
         session = db.SessionFactory()
         resource = session.query(models.Resource).get(self.resource_id)
         resource.state = RState.ENDED if retval else RState.READY
+        # TODO: limit for output size?
+        resource.data = output
+        tags = []
+        if type(self.pool.tags) != type([]):
+            print("'tags' is not array")
+        else:
+            for tag in self.pool.tags:
+                tag_obj = models.ResourceTag()
+                tag_obj.id = tag
+                tag_obj.resource_id = resource.id
+                tags.append(tag_obj)
+
         print("the state == " + resource.state)
-        session.add(resource)
+        session.add_all(tags + [resource])
         session.commit()
         session.close()
 
@@ -67,6 +85,7 @@ class Pool(object):
     cmd_new = None
     cmd_delete = None
     cmd_livecheck = None
+    tags = None
 
     def __init__(self, name, event):
         print("new pool " + name)

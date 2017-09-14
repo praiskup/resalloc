@@ -25,6 +25,8 @@ class Ticket(Base):
     __tablename__ = 'tickets'
     id = Column(Integer, primary_key=True)
     name = Column(String)
+    resource_id = Column(Integer, ForeignKey('resources.id'))
+    resource = relationship('Resource', backref=backref('resource'))
 
 
 class Resource(Base):
@@ -42,3 +44,10 @@ class ResourceTag(Base):
     id = Column(String, primary_key=True)
     resource_id = Column(Integer, ForeignKey('resources.id'), primary_key=True)
     resource = relationship('Resource', backref=backref('tags'))
+
+
+class TicketTag(Base):
+    __tablename__ = 'ticket_tags'
+    id = Column(String, primary_key=True)
+    ticket_id = Column(Integer, ForeignKey('tickets.id'), primary_key=True)
+    ticket = relationship('Ticket', backref=backref('tags'))

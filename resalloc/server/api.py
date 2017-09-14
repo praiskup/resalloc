@@ -15,22 +15,48 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import time
 from resalloc.server import db, models, api
 
 class ServerAPI(object):
     def __init__(self, event):
         self.event = event
 
-    def take(self, tags=None):
+
+    def takeTicket(self, tags=None):
         session = db.SessionFactory()
+        ticket = models.Ticket()
+        tag_objects = []
+        for tag in (tags or []):
+            to = models.TicketTag()
+            to.ticket = ticket
+            to.id = tag
+            tag_objects.append(to)
+
+        session.add_all([ticket] + tag_objects)
+        session.commit()
+        ticket_id = ticket.id
         session.close()
+        self.event.set()
+        return ticket_id
 
-    def takeResourceTicket(self, tags=None):
-        pass
 
-    def checkResourceTicket(self, ticket_id):
-        pass
+    def checkTicket(self, ticket_id):
+        session = db.SessionFactory()
+        ticket = session.query(models.Ticket).get(ticket_id)
+        if ticket.resource:
+            return ticket.resource.data
+        return None
 
-    def takeResource(self, ticket_id):
+
+    def takeResource(self, tags=None):
         """ ... blocking! ... """
-        pass
+        ticket_id = self.takeTicket(tags)
+        output = ""
+        while True:
+            output = self.checkTicket(ticket_id)
+            if output:
+                break
+            time.sleep(5)
+
+        return output

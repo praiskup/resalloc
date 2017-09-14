@@ -39,6 +39,14 @@ StateSet = StateSetMeta(str('StateSet'), (), {
     '__doc__': 'Set of states',
     })
 
+class RState(StateSet):
+    values = [
+        'STARTING',
+        'READY',
+        # This should be properly stopped instance, without any leftover
+        # allocated resources.  The database entries may be garbage collected.
+        'ENDED',
+    ]
 
 def merge_dict(origin, override):
     def _merge_dict(origin, override):

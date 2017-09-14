@@ -20,18 +20,9 @@ import threading
 import subprocess
 from resalloc.server import db, models
 from resalloc import helpers
+from resalloc.helpers import RState
 from resalloc.server.config import CONFIG_DIR
 from sqlalchemy import or_
-
-
-class RState(helpers.StateSet):
-    values = [
-        'STARTING',
-        'READY',
-        # This should be properly stopped instance, without any leftover
-        # allocated resources.  The database entries may be garbage collected.
-        'ENDED',
-    ]
 
 
 class AllocWorker(threading.Thread):

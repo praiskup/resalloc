@@ -90,7 +90,6 @@ class Pool(object):
     def allocate(self, session):
         resource = models.Resource()
         resource.pool = self.name
-
         session.add(resource)
         session.commit()
         print ("allocating id {0}".format(resource.id))
@@ -141,17 +140,28 @@ class Manager(object):
     def __init__(self, event):
         self.event = event
 
-    def _assign_tickets(self):
-        # # Assign tickets with resources.
-        # tickets = select_in_new_state.order_by id
-        # for ticket in tickets:
-        #     if not exists_resource:
-        #         continue
+    def _assign_tickets(self, session):
+        tickets = (
+            session.query(models.Ticket)
+                   .filter_by(resource_id=None)
+                   .order_by(models.Ticket.id)
+        ).all()
 
-        #     resource.state = taken
-        #     ticket.state = assigned
-        #     ticket.resource = resource
-        pass
+        for ticket in tickets:
+            resources = session.query(models.Resource).filter_by(state=RState.READY).all()
+            ticket_tags = set(map(str, ticket.tags))
+            for resource in resources:
+                res_tags = set(map(str, resource.tags))
+                import pprint
+                pprint.pprint(res_tags)
+                pprint.pprint(ticket_tags)
+                if ticket_tags.issubset(res_tags):
+                    print("=== adding resource to TAKEN =====")
+                    resource.state = RState.TAKEN
+                    session.add(resource)
+                    break
+
+        session.commit()
 
 
     def _reload_config(self):
@@ -170,11 +180,10 @@ class Manager(object):
 
     def _loop(self):
         session = db.SessionFactory()
-        self._assign_tickets()
+        self._assign_tickets(session)
         pools = self._reload_config()
         for pool in pools:
             pool._allocate_more_resources(session)
-        session.close()
         print("loop done...")
 
 

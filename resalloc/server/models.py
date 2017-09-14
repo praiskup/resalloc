@@ -45,9 +45,15 @@ class ResourceTag(Base):
     resource_id = Column(Integer, ForeignKey('resources.id'), primary_key=True)
     resource = relationship('Resource', backref=backref('tags'))
 
+    def __str__(self):
+        return str(self.id)
+
 
 class TicketTag(Base):
     __tablename__ = 'ticket_tags'
     id = Column(String, primary_key=True)
     ticket_id = Column(Integer, ForeignKey('tickets.id'), primary_key=True)
     ticket = relationship('Ticket', backref=backref('tags'))
+
+    def __str__(self):
+        return str(self.id)

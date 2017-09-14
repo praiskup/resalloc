@@ -36,7 +36,6 @@ class ServerAPI(object):
         session.add_all([ticket] + tag_objects)
         session.commit()
         ticket_id = ticket.id
-        session.close()
         self.event.set()
         return ticket_id
 

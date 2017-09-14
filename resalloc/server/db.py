@@ -17,7 +17,7 @@
 
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 from resalloc.server.config import CONFIG
 import threading
 
@@ -27,14 +27,8 @@ engine = create_engine(CONFIG['db_url'])
 def EngineSingleton():
     return engine
 
-# def EngineSingleton():
-#     engine = getattr(threadLocal, 'engine', None)
-#     if engine is None:
-#         print("== Allocating engine ==")
-#         threadLocal.engine = create_engine(CONFIG['db_url'])
-#     return threadLocal.engine
+session = sessionmaker(bind=EngineSingleton())
+Session = scoped_session(session)
 
 def SessionFactory():
-    session = sessionmaker()
-    session.configure(bind=EngineSingleton())
-    return session()
+    return Session()

@@ -21,6 +21,7 @@ import subprocess
 from resalloc.server import db, models
 from resalloc import helpers
 from resalloc.helpers import RState
+from resalloc.server.logic import QResources, QTickets
 from resalloc.server.config import CONFIG_DIR
 from sqlalchemy import or_
 
@@ -46,7 +47,7 @@ class AllocWorker(threading.Thread):
 
         session = db.Session()
         resource = session.query(models.Resource).get(self.resource_id)
-        resource.state = RState.ENDED if retval else RState.READY
+        resource.state = RState.ENDED if retval else RState.UP
         # TODO: limit for output size?
         resource.data = output
         tags = []
@@ -119,16 +120,12 @@ class Pool(object):
 
     def _allocate_more_resources(self, session):
         while True:
-            all_query = (session.query(models.Resource)
-                                .filter_by(pool=self.name)
-                                .filter(models.Resource.state.isnot(RState.ENDED)))
-            all_up = all_query.count()
-            ready = all_query.filter(models.Resource.state.in_([RState.READY, RState.STARTING])).count()
-            starting = all_query.filter(models.Resource.state.in_([RState.STARTING])).count()
-
-            print("pool {0}, ready {1}, starting {2}".format(self.name, ready, starting))
-            if all_up >= self.max \
-                   or ready >= self.max_prealloc \
+            qres = QResources(session)
+            up, ready, starting, taken = qres.stats()
+            print("pool {0}, ready {1}, starting {2}, taken {3}, up {4}"\
+                    .format(self.name, ready, starting, taken, up))
+            if up >= self.max \
+                   or ready + starting >= self.max_prealloc \
                    or starting >= self.max_starting:
                 # Quota reached, don't allocate more.
                 break
@@ -141,23 +138,16 @@ class Manager(object):
         self.event = event
 
     def _assign_tickets(self, session):
-        tickets = (
-            session.query(models.Ticket)
-                   .filter_by(resource_id=None)
-                   .order_by(models.Ticket.id)
-        ).all()
+        qticket = QTickets(session)
+        tickets = qticket.new().order_by(models.Ticket.id).all()
 
         for ticket in tickets:
-            resources = session.query(models.Resource).filter_by(state=RState.READY).all()
-            ticket_tags = set(map(str, ticket.tags))
+            qres = QResources(session)
+            resources = qres.ready().all()
+            ticket_tags = ticket.tag_set
             for resource in resources:
-                res_tags = set(map(str, resource.tags))
-                import pprint
-                pprint.pprint(res_tags)
-                pprint.pprint(ticket_tags)
+                res_tags = resource.tag_set
                 if ticket_tags.issubset(res_tags):
-                    print("=== adding resource to TAKEN =====")
-                    resource.state = RState.TAKEN
                     ticket.resource = resource
                     session.add_all([resource, ticket])
                     session.commit()

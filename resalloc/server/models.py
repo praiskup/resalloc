@@ -21,15 +21,22 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
-class Ticket(Base):
+class TagMixin(object):
+    @property
+    def tag_set(self):
+        return set(map(str, self.tags))
+
+
+class Ticket(Base, TagMixin):
     __tablename__ = 'tickets'
     id = Column(Integer, primary_key=True)
     name = Column(String)
     resource_id = Column(Integer, ForeignKey('resources.id'))
-    resource = relationship('Resource', backref=backref('resource'))
+    resource = relationship('Resource',
+                            backref=backref('ticket', uselist=False))
 
 
-class Resource(Base):
+class Resource(Base, TagMixin):
     __tablename__ = 'resources'
     id = Column(Integer, primary_key=True)
     user = Column(String, nullable=True)

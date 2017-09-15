@@ -16,7 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import time
-from resalloc.server import db, models, api
+from resalloc.server import db, models
 
 class ServerAPI(object):
     def __init__(self, event):

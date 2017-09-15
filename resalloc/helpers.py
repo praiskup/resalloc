@@ -42,8 +42,7 @@ StateSet = StateSetMeta(str('StateSet'), (), {
 class RState(StateSet):
     values = [
         'STARTING',
-        'READY',
-        'TAKEN',
+        'UP',
         # This should be properly stopped instance, without any leftover
         # allocated resources.  The database entries may be garbage collected.
         'ENDED',

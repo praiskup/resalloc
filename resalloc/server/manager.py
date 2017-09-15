@@ -44,7 +44,7 @@ class AllocWorker(threading.Thread):
             output = e.output
             retval = e.returncode
 
-        session = db.SessionFactory()
+        session = db.Session()
         resource = session.query(models.Resource).get(self.resource_id)
         resource.state = RState.ENDED if retval else RState.READY
         # TODO: limit for output size?
@@ -62,7 +62,7 @@ class AllocWorker(threading.Thread):
         print("the state == " + resource.state)
         session.add_all(tags + [resource])
         session.commit()
-        session.close()
+        db.Session.remove()
 
         # Notify manager that it is worth doing re-spin.
         self.event.set()
@@ -158,10 +158,10 @@ class Manager(object):
                 if ticket_tags.issubset(res_tags):
                     print("=== adding resource to TAKEN =====")
                     resource.state = RState.TAKEN
-                    session.add(resource)
+                    ticket.resource = resource
+                    session.add_all([resource, ticket])
+                    session.commit()
                     break
-
-        session.commit()
 
 
     def _reload_config(self):
@@ -179,11 +179,12 @@ class Manager(object):
 
 
     def _loop(self):
-        session = db.SessionFactory()
+        session = db.Session()
         self._assign_tickets(session)
         pools = self._reload_config()
         for pool in pools:
             pool._allocate_more_resources(session)
+        session.commit()
         print("loop done...")
 
 

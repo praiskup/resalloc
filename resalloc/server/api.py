@@ -24,7 +24,7 @@ class ServerAPI(object):
 
 
     def takeTicket(self, tags=None):
-        session = db.SessionFactory()
+        session = db.Session()
         ticket = models.Ticket()
         tag_objects = []
         for tag in (tags or []):
@@ -36,16 +36,19 @@ class ServerAPI(object):
         session.add_all([ticket] + tag_objects)
         session.commit()
         ticket_id = ticket.id
+        db.Session.remove()
         self.event.set()
         return ticket_id
 
 
     def checkTicket(self, ticket_id):
-        session = db.SessionFactory()
+        session = db.Session()
         ticket = session.query(models.Ticket).get(ticket_id)
+        data = None
         if ticket.resource:
-            return ticket.resource.data
-        return None
+            data = ticket.resource.data
+        db.Session.remove()
+        return data
 
 
     def takeResource(self, tags=None):

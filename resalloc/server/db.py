@@ -27,8 +27,4 @@ engine = create_engine(CONFIG['db_url'])
 def EngineSingleton():
     return engine
 
-session = sessionmaker(bind=EngineSingleton())
-Session = scoped_session(session)
-
-def SessionFactory():
-    return Session()
+Session = scoped_session(sessionmaker(bind=EngineSingleton()))

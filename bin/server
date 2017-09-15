@@ -56,8 +56,9 @@ class Server(threading.Thread):
 
 if __name__ == "__main__":
     # Create the database, if not exist yet.
-    session = db.SessionFactory()
+    session = db.Session()
     models.Base.metadata.create_all(session.get_bind())
+    db.Session.remove()
 
     # Synchronization tool.
     event = threading.Event()

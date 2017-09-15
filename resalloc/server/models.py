@@ -34,6 +34,7 @@ class Ticket(Base, TagMixin):
     resource_id = Column(Integer, ForeignKey('resources.id'))
     resource = relationship('Resource',
                             backref=backref('ticket', uselist=False))
+    tid = Column(String)
 
 
 class Resource(Base, TagMixin):

@@ -22,6 +22,7 @@ import threading
 
 from resalloc.server import db, models, api
 from resalloc.server.manager import Manager
+import queue
 
 PORT = 8000
 CLSXMLRPC = None
@@ -40,6 +41,12 @@ except:
     CLSXMLRPC = wrap
 
 
+class Synchronizer(object):
+    ticket = threading.Event()
+    resource_ready = threading.Condition()
+    resource_tid = None
+
+
 class Server(threading.Thread):
     server = None
 
@@ -47,7 +54,7 @@ class Server(threading.Thread):
         self.server = CLSXMLRPC(("localhost", 8000))
         self.server.daemon_threads = True
         self.server.register_introspection_functions()
-        self.server.register_instance(api.ServerAPI(event))
+        self.server.register_instance(api.ServerAPI(self.sync))
         self.server.serve_forever()
 
     def shutdown(self):
@@ -61,14 +68,15 @@ if __name__ == "__main__":
     db.Session.remove()
 
     # Synchronization tool.
-    event = threading.Event()
+    sync = Synchronizer()
 
     # Start server on background.
     server = Server()
+    server.sync = sync
     server.start()
 
     try:
-        Manager(event).run()
+        Manager(sync).run()
     except KeyboardInterrupt:
         pass
     finally:

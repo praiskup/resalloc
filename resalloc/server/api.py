@@ -17,15 +17,21 @@
 
 import time
 from resalloc.server import db, models
+import threading
 
 class ServerAPI(object):
-    def __init__(self, event):
-        self.event = event
+    def __init__(self, sync):
+        self.sync = sync
 
+    def my_id(self):
+        return str(threading.current_thread())
 
-    def takeTicket(self, tags=None):
+    def takeTicket(self, tags=None, signal=False):
         session = db.Session()
         ticket = models.Ticket()
+        if signal:
+            ticket.tid = self.my_id()
+
         tag_objects = []
         for tag in (tags or []):
             to = models.TicketTag()
@@ -37,7 +43,7 @@ class ServerAPI(object):
         session.commit()
         ticket_id = ticket.id
         db.Session.remove()
-        self.event.set()
+        self.sync.ticket.set()
         return ticket_id
 
 
@@ -53,12 +59,16 @@ class ServerAPI(object):
 
     def takeResource(self, tags=None):
         """ ... blocking! ... """
-        ticket_id = self.takeTicket(tags)
+        ticket_id = self.takeTicket(tags, True)
         output = ""
         while True:
-            output = self.checkTicket(ticket_id)
-            if output:
-                break
-            time.sleep(5)
+            with self.sync.resource_ready:
+                while self.sync.resource_ready.wait(timeout=10):
+                    if self.sync.tid==self.my_id():
+                        break
+
+                output = self.checkTicket(ticket_id)
+                if output:
+                    break
 
         return output

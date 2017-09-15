@@ -25,7 +25,6 @@ from resalloc.server.logic import QResources, QTickets
 from resalloc.server.config import CONFIG_DIR
 from sqlalchemy import or_
 
-
 class AllocWorker(threading.Thread):
     def __init__(self, event, pool, res_id):
         self.resource_id = res_id
@@ -134,8 +133,13 @@ class Pool(object):
 
 
 class Manager(object):
-    def __init__(self, event):
-        self.event = event
+    def __init__(self, sync):
+        self.sync = sync
+
+    def _notify_waiting(self, thread_id):
+        self.sync.tid = thread_id
+        with self.sync.resource_ready:
+            self.sync.resource_ready.notify_all()
 
     def _assign_tickets(self, session):
         qticket = QTickets(session)
@@ -151,6 +155,8 @@ class Manager(object):
                     ticket.resource = resource
                     session.add_all([resource, ticket])
                     session.commit()
+                    if ticket.tid:
+                        self._notify_waiting(ticket.tid)
                     break
 
 
@@ -160,7 +166,7 @@ class Manager(object):
 
         pools = []
         for pool_id in config:
-            pool = Pool(pool_id, self.event)
+            pool = Pool(pool_id, self.sync.ticket)
             pool.from_dict(config[pool_id])
             pool.validate()
             pools.append(pool)
@@ -182,8 +188,8 @@ class Manager(object):
         self._loop()
         while True:
             # Wait for the request to set the event (or timeout).
-            self.event.wait(timeout=20)
-            self.event.clear()
+            self.sync.ticket.wait(timeout=20)
+            self.sync.ticket.clear()
             # Until the wait() is called again, any additional event.set() call
             # means another round (even though it might do nothing).
             self._loop()

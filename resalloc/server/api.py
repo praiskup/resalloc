@@ -24,20 +24,32 @@ class Ticket(object):
     id = None
     resource = None
 
+def cached_session(function):
+    def wrap(self, *args, **kwargs):
+        ret = None
+        if self.session:
+            ret = function(self, *args, **kwargs)
+        else:
+            self.session = db.Session()
+            ret = function(self, *args, **kwargs)
+            db.Session.remove()
+            self.session = None
+        return ret
+    return wrap
+
 
 class ServerAPI(object):
+    session = None
+
     def __init__(self, sync):
         self.sync = sync
 
     def my_id(self):
         return str(threading.current_thread())
 
-    def takeTicket(self, tags=None, signal=False):
-        session = db.Session()
+    @cached_session
+    def takeTicket(self, tags=None, session=None):
         ticket = models.Ticket()
-        if signal:
-            ticket.tid = self.my_id()
-
         tag_objects = []
         for tag in (tags or []):
             to = models.TicketTag()
@@ -45,47 +57,54 @@ class ServerAPI(object):
             to.id = tag
             tag_objects.append(to)
 
-        session.add_all([ticket] + tag_objects)
-        session.commit()
+        self.session.add_all([ticket] + tag_objects)
+        self.session.commit()
         ticket_id = ticket.id
-        db.Session.remove()
         self.sync.ticket.set()
         return ticket_id
 
 
-    def checkTicket(self, ticket_id):
-        session = db.Session()
-        ticket = session.query(models.Ticket).get(ticket_id)
-        data = None
-        if ticket.resource:
-            data = ticket.resource.data
-        db.Session.remove()
-        return data
+    @cached_session
+    def _checkTicket(self, ticket_id):
+        ticket = self.session.query(models.Ticket).get(ticket_id)
+        return ticket.resource
 
+    @cached_session
+    def collectTicket(self, ticket_id, session=None):
+        output = {
+            'ready': False,
+            'output': None,
+        }
+        resource = self._checkTicket(ticket_id)
+        if resource:
+            output['output'] = resource.data
+            output['ready'] = True
 
-    def takeResource(self, tags=None):
+        return output
+
+    @cached_session
+    def waitTicket(self, ticket_id):
         """ ... blocking! ... """
-        ticket_id = self.takeTicket(tags, True)
         output = ""
         while True:
+            ticket = self.session.query(models.Ticket).get(ticket_id)
+            if not ticket.tid:
+                ticket.tid = self.my_id()
+                self.session.add(ticket)
+                self.session.commit()
+                continue
+
+            if ticket.resource:
+                return ticket.resource.output
+
             with self.sync.resource_ready:
                 while self.sync.resource_ready.wait(timeout=10):
                     if self.sync.tid==self.my_id():
                         break
 
-                output = self.checkTicket(ticket_id)
-                if output:
-                    break
-
-        t = Ticket()
-        t.id = ticket_id
-        return t
-
-
+    @cached_session
     def closeTicket(self, ticket_id):
-        session = db.Session()
-        ticket = session.query(models.Ticket).get(ticket_id)
+        ticket = self.session.query(models.Ticket).get(ticket_id)
         ticket.state = TState.CLOSED
-        session.add(ticket)
-        session.commit()
-        db.Session.remove()
+        self.session.add(ticket)
+        self.session.commit()

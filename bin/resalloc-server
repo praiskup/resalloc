@@ -52,6 +52,7 @@ class Server(threading.Thread):
 
     def run(self):
         self.server = CLSXMLRPC(("localhost", 8000))
+        self.server.allow_none = True
         self.server.daemon_threads = True
         self.server.register_introspection_functions()
         self.server.register_instance(api.ServerAPI(self.sync))

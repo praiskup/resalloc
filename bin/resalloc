@@ -53,14 +53,20 @@ if __name__ == "__main__":
         if 'ticket' == arg.subparser:
             conn = Connection(arg.connection)
             ticket = conn.newTicket(arg.create_tags)
-            print "alloc"
+            print(ticket.id)
         elif 'ticket-get' == arg.subparser:
-            print "get"
-        elif 'ticket-delete' == arg.subparser:
             conn = Connection(arg.connection)
-            conn
-        import pprint
-        pprint.pprint(arg)
+            ticket = conn.getTicket(arg.ticket)
+            if ticket.collect():
+                print(ticket.output)
+            else:
+                print("nothing useful yet")
+        elif 'ticket-wait' == arg.subparser:
+            pass
+        elif 'ticket-close' == arg.subparser:
+            conn = Connection(arg.connection)
+            ticket = conn.getTicket(arg.ticket)
+            ticket.close()
 
     except KeyboardInterrupt:
         sys.stderr.write("\nInterrupted by user.")

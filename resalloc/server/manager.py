@@ -15,7 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os
+import os, sys
 import threading
 import subprocess
 from resalloc.server import db, models
@@ -25,12 +25,38 @@ from resalloc.server.logic import QResources, QTickets
 from resalloc.server.config import CONFIG_DIR
 from sqlalchemy import or_
 
-class AllocWorker(threading.Thread):
+
+class Worker(threading.Thread):
     def __init__(self, event, pool, res_id):
         self.resource_id = res_id
         self.pool = pool
         self.event = event
         threading.Thread.__init__(self)
+
+
+class TerminateWorker(Worker):
+    def close(self):
+        session = db.Session()
+        resource = session.query(models.Resource).get(self.resource_id)
+        resource.state = RState.ENDED
+        session.add(resource)
+        session.commit()
+        db.Session.remove()
+        self.event.set()
+
+    def run(self):
+        if not self.pool.cmd_delete:
+            self.close()
+            return
+
+        try:
+            subprocess.check_output(self.pool.cmd_delete, shell=True)
+            self.close()
+        except subprocess.CalledProcessError as e:
+            return
+
+
+class AllocWorker(Worker):
 
     def run(self):
         # Run the allocation script.
@@ -131,6 +157,11 @@ class Pool(object):
 
             self.allocate(session)
 
+    def _garbage_collector(self, session):
+        qres = QResources(session)
+        for resource in qres.clean_candidates().all():
+            TerminateWorker(self.event, self, int(resource.id)).start()
+
 
 class Manager(object):
     def __init__(self, sync):
@@ -180,6 +211,7 @@ class Manager(object):
         pools = self._reload_config()
         for pool in pools:
             pool._allocate_more_resources(session)
+            pool._garbage_collector(session)
         session.commit()
         print("loop done...")
 

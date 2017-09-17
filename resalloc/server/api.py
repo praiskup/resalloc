@@ -113,3 +113,4 @@ class ServerAPI(object):
         ticket.state = TState.CLOSED
         self.session.add(ticket)
         self.session.commit()
+        self.sync.ticket.set()

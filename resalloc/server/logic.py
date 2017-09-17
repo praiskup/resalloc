@@ -16,7 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from resalloc.server import models
-from resalloc.helpers import RState
+from resalloc.helpers import RState, TState
 from sqlalchemy.orm import Query
 
 
@@ -54,6 +54,11 @@ class QResources(QObject):
         ready       = [x for x in up        if x.ticket == None]
         taken       = [x for x in up        if x.ticket != None]
         return (len(up), len(ready), len(starting), len(taken))
+
+    def clean_candidates(self):
+        return self.on().join(models.Ticket)\
+                        .filter(models.Ticket.state == TState.CLOSED)
+
 
 
 class QTickets(QObject):

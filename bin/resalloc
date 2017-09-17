@@ -58,9 +58,9 @@ if __name__ == "__main__":
             conn = Connection(arg.connection)
             ticket = conn.getTicket(arg.ticket)
             if ticket.collect():
-                print(ticket.output)
+                sys.stdout.write(str(ticket.output))
             else:
-                print("nothing useful yet")
+                sys.stderr.write("ticket is still not processed\n")
         elif 'ticket-wait' == arg.subparser:
             pass
         elif 'ticket-close' == arg.subparser:

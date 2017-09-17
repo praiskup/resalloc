@@ -20,6 +20,9 @@ from resalloc.server import db, models
 from resalloc.helpers import TState
 import threading
 
+class ServerAPIException(Exception):
+    pass
+
 class Ticket(object):
     id = None
     resource = None
@@ -67,6 +70,8 @@ class ServerAPI(object):
     @cached_session
     def _checkTicket(self, ticket_id):
         ticket = self.session.query(models.Ticket).get(ticket_id)
+        if not ticket:
+            raise ServerAPIException("no such ticket")
         return ticket.resource
 
     @cached_session

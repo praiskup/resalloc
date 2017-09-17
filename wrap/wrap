@@ -17,10 +17,11 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-proj_cli_dir="$(dirname "$(readlink -f "$0")")"
+proj_cli_dir="$(dirname "$(readlink -f "$0")")"/..
+wrapper=$(basename "$0")
 
 export PYTHON=${PYTHON:-`which python3`}
 export PYTHONPATH="$proj_cli_dir${PYTHONPATH+:$PYTHONPATH}"
 export CONFIG_DIR=$proj_cli_dir/etc
 
-$PYTHON $proj_cli_dir/bin/server "$@"
+$PYTHON $proj_cli_dir/bin/"$wrapper" "$@"

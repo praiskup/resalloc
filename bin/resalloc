@@ -1,0 +1,67 @@
+#!/usr/bin/env python
+
+# Resalloc client.
+# Copyright (C) 2017 Red Hat, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+import sys
+import argparse
+
+from resalloc.client import Ticket, Connection
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+        "--connection", dest="connection", default="http://localhost:8000")
+
+subparsers = parser.add_subparsers(title="actions", dest='subparser')
+parser_new_ticket = subparsers.add_parser(
+        "ticket",
+        help="Create ticket")
+parser_new_ticket.add_argument(
+        "--tag", dest="create_tags", action="append",
+        help="What tag the Resource should have")
+parser_get_ticket = subparsers.add_parser(
+        "ticket-get",
+        help="Obtain ticket")
+parser_get_ticket.add_argument(
+        "ticket",
+        help="Get the ticket")
+parser_close_ticket = subparsers.add_parser(
+        "ticket-close",
+        help="Close a ticket")
+parser_close_ticket.add_argument(
+        "ticket",
+        help="Get the ticket")
+
+if __name__ == "__main__":
+    try:
+        arg = parser.parse_args()
+
+        if 'ticket' == arg.subparser:
+            conn = Connection(arg.connection)
+            ticket = conn.newTicket(arg.create_tags)
+            print "alloc"
+        elif 'ticket-get' == arg.subparser:
+            print "get"
+        elif 'ticket-delete' == arg.subparser:
+            conn = Connection(arg.connection)
+            conn
+        import pprint
+        pprint.pprint(arg)
+
+    except KeyboardInterrupt:
+        sys.stderr.write("\nInterrupted by user.")
+        sys.exit(1)

@@ -48,6 +48,9 @@ class RState(StateSet):
         'ENDED',
     ]
 
+class TState(StateSet):
+    values = ['OPEN', 'CLOSED']
+
 def merge_dict(origin, override):
     def _merge_dict(origin, override):
         """

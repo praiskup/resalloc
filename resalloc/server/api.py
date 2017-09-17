@@ -17,7 +17,13 @@
 
 import time
 from resalloc.server import db, models
+from resalloc.helpers import TState
 import threading
+
+class Ticket(object):
+    id = None
+    resource = None
+
 
 class ServerAPI(object):
     def __init__(self, sync):
@@ -71,4 +77,15 @@ class ServerAPI(object):
                 if output:
                     break
 
-        return output
+        t = Ticket()
+        t.id = ticket_id
+        return t
+
+
+    def closeTicket(self, ticket_id):
+        session = db.Session()
+        ticket = session.query(models.Ticket).get(ticket_id)
+        ticket.state = TState.CLOSED
+        session.add(ticket)
+        session.commit()
+        db.Session.remove()

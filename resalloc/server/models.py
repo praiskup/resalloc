@@ -19,6 +19,8 @@ from sqlalchemy import Column, DateTime, String, Integer, ForeignKey, func
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 
+from resalloc.helpers import RState, TState
+
 Base = declarative_base()
 
 class TagMixin(object):
@@ -34,6 +36,7 @@ class Ticket(Base, TagMixin):
     resource_id = Column(Integer, ForeignKey('resources.id'))
     resource = relationship('Resource',
                             backref=backref('ticket', uselist=False))
+    state = Column(String, default=TState.OPEN)
     tid = Column(String)
 
 
@@ -44,7 +47,7 @@ class Resource(Base, TagMixin):
     # The output from 'allocation' script.
     data = Column(String)
     pool = Column(String, nullable=False)
-    state = Column(String, nullable=False, default='STARTING')
+    state = Column(String, nullable=False, default=RState.STARTING)
 
 
 class ResourceTag(Base):

@@ -195,6 +195,7 @@ class Pool(object):
     cmd_livecheck = None
     livecheck_period = 600
     tags = None
+    name_pattern = "{pool_name}_ID{id}_{datetime}"
 
     def __init__(self, name):
         self.name = name
@@ -214,7 +215,12 @@ class Pool(object):
             session.add_all([resource, dbinfo])
             session.flush()
             resource_id = resource.id
-
+            fill_dict = dict(
+                id=resource_id,
+                pool_name=self.name)
+            resource.name = helpers.careful_string_format(
+                    self.name_pattern, fill_dict)
+            session.add(resource)
         if resource_id:
             self.last_start = time.time()
             AllocWorker(event, self, int(resource_id)).start()

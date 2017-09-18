@@ -20,6 +20,7 @@ import copy
 import six
 import yaml
 import threading
+import datetime
 
 class StateSetException(Exception):
     def __init__(self, message):
@@ -81,3 +82,21 @@ def load_config_file(path):
         if not type(config) == dict:
             raise Exception("Configuration is not dictionary")
         return config
+
+
+def careful_string_format(pattern, fill_dict):
+    result = None
+
+    fill_dict['datetime'] = datetime.datetime.now().isoformat()\
+                                    .replace('-', '').replace('T', '_')\
+                                    .replace(':', '').replace('.', '')
+
+    while True:
+        try:
+            result = pattern.format(**fill_dict)
+        except KeyError as e:
+            key = e.args[0]
+            fill_dict[key] = '{key}'.format(key=key)
+        break
+
+    return result

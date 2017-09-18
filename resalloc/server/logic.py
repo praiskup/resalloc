@@ -48,12 +48,14 @@ class QResources(QObject):
         return self.query.filter_by(state=RState.STARTING)
 
     def stats(self):
-        all_items = self.on().outerjoin(models.Ticket).all()
-        up          = [x for x in all_items if x.state  == RState.UP]
-        starting    = [x for x in all_items if x.state  == RState.STARTING]
-        ready       = [x for x in up        if x.ticket == None]
-        taken       = [x for x in up        if x.ticket != None]
-        return (len(up), len(ready), len(starting), len(taken))
+        items = {}
+        items['on']     = self.on().outerjoin(models.Ticket).all()
+        items['up']     = [x for x in items['on'] if x.state  == RState.UP]
+        items['ready']  = [x for x in items['up'] if x.ticket == None]
+        items['taken']  = [x for x in items['up'] if x.ticket != None]
+        items['start']  = [x for x in items['on'] if x.state  == RState.STARTING]
+        items['term']   = [x for x in items['on'] if x.state  == RState.DELETING]
+        return {key: len(value) for (key, value) in items.items()}
 
     def clean_candidates(self):
         return self.on().join(models.Ticket)\

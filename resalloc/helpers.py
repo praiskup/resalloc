@@ -44,6 +44,7 @@ class RState(StateSet):
     values = [
         'STARTING',
         'UP',
+        'DELETING',
         # This should be properly stopped instance, without any leftover
         # allocated resources.  The database entries may be garbage collected.
         'ENDED',

@@ -44,6 +44,11 @@ class TerminateWorker(Worker):
             self.event.set()
 
     def run(self):
+        with session_scope() as session:
+            resource = session.query(models.Resource).get(self.resource_id)
+            resource.state = RState.DELETING
+            session.add(resource)
+
         helpers.dump_trhead_id("TerminateWorker")
         if not self.pool.cmd_delete:
             self.close()
@@ -153,15 +158,19 @@ class Pool(object):
         while True:
             with session_scope() as session:
                 qres = QResources(session)
-                up, ready, starting, taken = qres.stats()
+                stats = qres.stats()
 
-            print("pool {0}, ready {1}, starting {2}, taken {3}, up {4}"\
-                    .format(self.name, ready, starting, taken, up))
-            if up >= self.max \
-                   or ready + starting >= self.max_prealloc \
-                   or starting >= self.max_starting:
+            msg = " => POOL('{0}'):".format(self.name)
+            for key, val in stats.items():
+                msg = msg + ' {0}={1}'.format(key,val)
+            sys.stderr.write(msg + "\n")
+
+            if stats['on'] >= self.max \
+                   or stats['ready'] + stats['start'] >= self.max_prealloc \
+                   or stats['start'] >= self.max_starting:
                 # Quota reached, don't allocate more.
                 break
+
             self.allocate()
 
     def _garbage_collector(self):

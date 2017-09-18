@@ -15,17 +15,20 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os, sys
+import os
 import threading
 import subprocess
+import warnings
 from resalloc.server import db, models
 from resalloc.server.db import session_scope
 from resalloc import helpers
 from resalloc.helpers import RState
+from resalloc.server.log import get_logger
 from resalloc.server.logic import QResources, QTickets
 from resalloc.server.config import CONFIG_DIR
 from sqlalchemy import or_
 
+log = get_logger(__name__)
 
 class Worker(threading.Thread):
     def __init__(self, event, pool, res_id):
@@ -33,6 +36,10 @@ class Worker(threading.Thread):
         self.pool = pool
         self.event = event
         threading.Thread.__init__(self)
+
+    def run(self):
+        self.log = log.getChild("worker")
+        self.job()
 
 
 class TerminateWorker(Worker):
@@ -43,13 +50,14 @@ class TerminateWorker(Worker):
             session.add(resource)
             self.event.set()
 
-    def run(self):
+    def job(self):
         with session_scope() as session:
             resource = session.query(models.Resource).get(self.resource_id)
             resource.state = RState.DELETING
             session.add(resource)
 
-        helpers.dump_trhead_id("TerminateWorker")
+        self.log.debug("TerminateWorker(pool={0}): \"{1}\""\
+                .format(self.pool.name, self.pool.cmd_delete))
         if not self.pool.cmd_delete:
             self.close()
             return
@@ -63,11 +71,17 @@ class TerminateWorker(Worker):
 
 class AllocWorker(Worker):
 
-    def run(self):
-        helpers.dump_trhead_id("AllocWorker")
-        # Run the allocation script.
+    def job(self):
+        self.log.debug(
+            "Allocating new resource id={id} in pool '{pool}' by {cmd}"\
+                .format(
+                    id=self.resource_id,
+                    pool=self.pool.name,
+                    cmd=self.pool.cmd_new
+                )
+        )
 
-        print("running spinup command: {0}".format(self.pool.cmd_new))
+        # Run the allocation script.
         retval = 0
         output = ''
         try:
@@ -83,7 +97,9 @@ class AllocWorker(Worker):
             resource.data = output
             tags = []
             if type(self.pool.tags) != type([]):
-                print("'tags' is not array")
+                msg = "Pool {pool} has set 'tags' set, but that's not an array"\
+                        .format(pool=self.name)
+                warnings.warn(msg)
             else:
                 for tag in self.pool.tags:
                     tag_obj = models.ResourceTag()
@@ -91,7 +107,7 @@ class AllocWorker(Worker):
                     tag_obj.resource_id = resource.id
                     tags.append(tag_obj)
 
-            print("the state == " + resource.state)
+            log.debug("Allocator ends with state={0}".format(resource.state))
             session.add_all(tags + [resource])
 
         # Notify manager that it is worth doing re-spin.
@@ -109,7 +125,6 @@ class Pool(object):
     tags = None
 
     def __init__(self, name, event):
-        print("new pool " + name)
         self.name = name
         self.event = event
 
@@ -118,7 +133,6 @@ class Pool(object):
         assert(self.cmd_delete)
 
     def allocate(self):
-        helpers.dump_trhead_id('allocate')
         resource_id = None
         with session_scope() as session:
             resource = models.Resource()
@@ -128,7 +142,6 @@ class Pool(object):
             resource_id = resource.id
 
         if resource_id:
-            print ("allocating id {0}".format(resource_id))
             AllocWorker(self.event, self, int(resource_id)).start()
 
     def from_dict(self, data):
@@ -140,7 +153,7 @@ class Pool(object):
 
         for key in data:
             if not hasattr(self, key):
-                print("useless config " + key)
+                warnings.warn("useless config option '{0}'".format(key))
                 continue
 
             local = getattr(self, key)
@@ -154,16 +167,15 @@ class Pool(object):
                 setattr(self, key, data[key])
 
     def _allocate_more_resources(self):
-        helpers.dump_trhead_id('alloate_more_resources')
         while True:
             with session_scope() as session:
                 qres = QResources(session)
                 stats = qres.stats()
 
-            msg = " => POOL('{0}'):".format(self.name)
+            msg = "=> POOL('{0}'):".format(self.name)
             for key, val in stats.items():
                 msg = msg + ' {0}={1}'.format(key,val)
-            sys.stderr.write(msg + "\n")
+            log.debug(msg)
 
             if stats['on'] >= self.max \
                    or stats['ready'] + stats['start'] >= self.max_prealloc \
@@ -193,13 +205,13 @@ class Manager(object):
             self.sync.resource_ready.notify_all()
 
     def _assign_tickets(self):
-        helpers.dump_trhead_id('assign_tickets')
         with session_scope() as session:
             qticket = QTickets(session)
             tickets = [x.id for x in qticket.new().order_by(models.Ticket.id).all()]
 
         for ticket_id in tickets:
-            try:
+            notify_ticket = False
+            with session_scope() as session:
                 ticket = session.query(models.Ticket).get(ticket_id)
                 qres = QResources(session)
                 resources = qres.ready().all()
@@ -207,21 +219,18 @@ class Manager(object):
                 for resource in resources:
                     res_tags = resource.tag_set
                     if ticket_tags.issubset(res_tags):
+                        # We have found appropriate resource!
                         ticket.resource = resource
-                        session.add_all([resource, ticket])
-                        session.commit()
                         if ticket.tid:
-                            self._notify_waiting(ticket.tid)
-                    break
-            except:
-                session.rollback()
-                raise
-            finally:
-                session.close()
+                            notify_ticket = ticket.tid
+                        session.add_all([resource, ticket])
+                        session.flush()
+                        break
+            if notify_ticket:
+                self._notify_waiting(notify_ticket)
 
 
     def _reload_config(self):
-        helpers.dump_trhead_id('reload_configs')
         config_file = os.path.join(CONFIG_DIR, "pools.yaml")
         config = helpers.load_config_file(config_file)
 
@@ -241,7 +250,7 @@ class Manager(object):
         for pool in pools:
             pool._allocate_more_resources()
             pool._garbage_collector()
-        print("loop done...")
+        log.debug("loop done...")
 
 
     def run(self):

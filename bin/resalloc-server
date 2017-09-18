@@ -64,8 +64,6 @@ class Server(threading.Thread):
 
 
 if __name__ == "__main__":
-    helpers.dump_trhead_id()
-
     # Create the database, if not exist yet.
     with db.session_scope() as session:
         models.Base.metadata.create_all(session.get_bind())

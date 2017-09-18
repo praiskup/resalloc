@@ -81,6 +81,3 @@ def load_config_file(path):
         if not type(config) == dict:
             raise Exception("Configuration is not dictionary")
         return config
-
-def dump_trhead_id(xx="--"):
-    sys.stderr.write("{0} {1}\n".format(threading.current_thread().ident, xx))

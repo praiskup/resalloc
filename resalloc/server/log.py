@@ -1,4 +1,4 @@
-# Resalloc server configuration management.
+# Resalloc server's logging configuration.
 # Copyright (C) 2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -15,22 +15,18 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os
-import yaml
-from resalloc.helpers import merge_dict, load_config_file
 
-config_dir = "/etc/resalloc"
-if 'CONFIG_DIR' in os.environ:
-    config_dir = os.environ['CONFIG_DIR']
+import logging
+from resalloc.server.config import CONFIG
 
-# Setup defaults.
-CONFIG = {
-    'db_url': 'sqlite:////tmp/test-db.sqlite',
-    'main_logfile': '/tmp/main-log',
-}
-
-
-CONFIG_DIR = config_dir
-
-config_file = os.path.join(config_dir, 'server.yaml')
-CONFIG = merge_dict(CONFIG, load_config_file(config_file))
+def get_logger(loggername):
+    log = logging.getLogger()
+    log.setLevel(logging.DEBUG)
+    file_formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    main_file = logging.FileHandler(CONFIG['main_logfile'])
+    main_file.setLevel(logging.DEBUG)
+    main_file.setFormatter(file_formatter)
+    log.addHandler(main_file)
+    log.addHandler(logging.StreamHandler())
+    return log

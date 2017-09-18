@@ -19,7 +19,7 @@ import sys
 import time
 from resalloc.server import db, models
 from resalloc.server.db import session_scope
-from resalloc.helpers import TState, dump_trhead_id
+from resalloc.helpers import TState
 import threading
 
 threadLocal = threading.local()
@@ -31,13 +31,6 @@ class Ticket(object):
     id = None
     resource = None
 
-def dump_thread_decorator(function):
-    def wrap(*args, **kwargs):
-        dump_trhead_id()
-        sys.stderr.write('{0}\n'.format(function))
-        return function(*args, **kwargs)
-    return wrap
-
 
 class ServerAPI(object):
     def __init__(self, sync):
@@ -46,7 +39,6 @@ class ServerAPI(object):
     def my_id(self):
         return str(threading.current_thread())
 
-    @dump_thread_decorator
     def takeTicket(self, tags=None):
         with session_scope() as session:
             ticket = models.Ticket()
@@ -71,7 +63,7 @@ class ServerAPI(object):
             raise ServerAPIException("no such ticket")
         return ticket.resource
 
-    @dump_thread_decorator
+
     def collectTicket(self, ticket_id):
         output = {
             'ready': False,
@@ -85,7 +77,6 @@ class ServerAPI(object):
         return output
 
 
-    @dump_thread_decorator
     def waitTicket(self, ticket_id):
         """ ... blocking! ... """
         output = ""
@@ -106,9 +97,11 @@ class ServerAPI(object):
                     if self.sync.tid==self.my_id():
                         break
 
-    @dump_thread_decorator
+
     def closeTicket(self, ticket_id):
         with session_scope() as session:
             ticket = session.query(models.Ticket).get(ticket_id)
+            if not ticket:
+                raise ServerAPIException("no such ticket {0}".format(ticket_id))
             ticket.state = TState.CLOSED
             self.sync.ticket.set()

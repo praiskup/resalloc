@@ -16,6 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
+import time
 import threading
 import subprocess
 import warnings
@@ -114,10 +115,25 @@ class AllocWorker(Worker):
         self.event.set()
 
 
+class Watcher(threading.Thread):
+    def run(self):
+        while True:
+            to_check = {}
+            with session_scope() as session:
+                up = QResources(session).up().all()
+                for item in up:
+                    to_check[item.id] = item.name
+            time.sleep(30)
+
+
 class Pool(object):
     max = 4
     max_starting = 1
     max_prealloc = 2
+    # Minimal time in seconds to wait between subsequent resource starts.
+    # If the resource fails to start, the timeout still applies.  Note, however,
+    # that there's no event (yet?) to wake-up manager if this timeout lasts.
+    start_delay = 0
 
     cmd_new = None
     cmd_delete = None
@@ -128,6 +144,7 @@ class Pool(object):
         self.name = name
         self.event = event
 
+
     def validate(self):
         assert(self.cmd_new)
         assert(self.cmd_delete)
@@ -135,13 +152,16 @@ class Pool(object):
     def allocate(self):
         resource_id = None
         with session_scope() as session:
+            dbinfo = session.query(models.Pool).get(self.name)
+            dbinfo.last_start = time.time()
             resource = models.Resource()
             resource.pool = self.name
-            session.add(resource)
+            session.add_all([resource, dbinfo])
             session.flush()
             resource_id = resource.id
 
         if resource_id:
+            self.last_start = time.time()
             AllocWorker(self.event, self, int(resource_id)).start()
 
     def from_dict(self, data):
@@ -166,6 +186,23 @@ class Pool(object):
             else:
                 setattr(self, key, data[key])
 
+    def _too_soon(self):
+        last_start = 0.0
+        with session_scope() as session:
+            dbinfo = session.query(models.Pool).get(self.name)
+            if not dbinfo:
+                dbinfo = models.Pool()
+                dbinfo.name = self.name
+                dbinfo.last_start = 0.0
+                session.add(dbinfo)
+            else:
+                last_start = dbinfo.last_start
+
+        is_too_soon = last_start + self.start_delay > time.time()
+        if is_too_soon:
+            log.debug("too soon for Pool('{0}')".format(self.name))
+        return is_too_soon
+
     def _allocate_more_resources(self):
         while True:
             with session_scope() as session:
@@ -179,7 +216,8 @@ class Pool(object):
 
             if stats['on'] >= self.max \
                    or stats['ready'] + stats['start'] >= self.max_prealloc \
-                   or stats['start'] >= self.max_starting:
+                   or stats['start'] >= self.max_starting \
+                   or self._too_soon():
                 # Quota reached, don't allocate more.
                 break
 

@@ -15,7 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from sqlalchemy import Column, DateTime, String, Integer, ForeignKey, func
+from sqlalchemy import Column, DateTime, String, Integer, Float, ForeignKey, func
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -27,6 +27,12 @@ class TagMixin(object):
     @property
     def tag_set(self):
         return set(map(str, self.tags))
+
+
+class Pool(Base):
+    __tablename__ = 'pools'
+    name = Column(String, primary_key=True)
+    last_start = Column(Float, default=0)
 
 
 class Ticket(Base, TagMixin):
@@ -43,6 +49,7 @@ class Ticket(Base, TagMixin):
 class Resource(Base, TagMixin):
     __tablename__ = 'resources'
     id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=True)
     user = Column(String, nullable=True)
     # The output from 'allocation' script.
     data = Column(String)

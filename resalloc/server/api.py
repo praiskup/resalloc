@@ -15,10 +15,14 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import sys
 import time
 from resalloc.server import db, models
-from resalloc.helpers import TState
+from resalloc.server.db import session_scope
+from resalloc.helpers import TState, dump_trhead_id
 import threading
+
+threadLocal = threading.local()
 
 class ServerAPIException(Exception):
     pass
@@ -27,90 +31,84 @@ class Ticket(object):
     id = None
     resource = None
 
-def cached_session(function):
-    def wrap(self, *args, **kwargs):
-        ret = None
-        if self.session:
-            ret = function(self, *args, **kwargs)
-        else:
-            self.session = db.Session()
-            ret = function(self, *args, **kwargs)
-            db.Session.remove()
-            self.session = None
-        return ret
+def dump_thread_decorator(function):
+    def wrap(*args, **kwargs):
+        dump_trhead_id()
+        sys.stderr.write('{0}\n'.format(function))
+        return function(*args, **kwargs)
     return wrap
 
 
 class ServerAPI(object):
-    session = None
-
     def __init__(self, sync):
         self.sync = sync
 
     def my_id(self):
         return str(threading.current_thread())
 
-    @cached_session
-    def takeTicket(self, tags=None, session=None):
-        ticket = models.Ticket()
-        tag_objects = []
-        for tag in (tags or []):
-            to = models.TicketTag()
-            to.ticket = ticket
-            to.id = tag
-            tag_objects.append(to)
+    @dump_thread_decorator
+    def takeTicket(self, tags=None):
+        with session_scope() as session:
+            ticket = models.Ticket()
+            tag_objects = []
+            for tag in (tags or []):
+                to = models.TicketTag()
+                to.ticket = ticket
+                to.id = tag
+                tag_objects.append(to)
 
-        self.session.add_all([ticket] + tag_objects)
-        self.session.commit()
-        ticket_id = ticket.id
+            session.add_all([ticket] + tag_objects)
+            session.flush()
+            ticket_id = ticket.id
+
         self.sync.ticket.set()
         return ticket_id
 
 
-    @cached_session
-    def _checkTicket(self, ticket_id):
-        ticket = self.session.query(models.Ticket).get(ticket_id)
+    def _checkTicket(self, ticket_id, session):
+        ticket = session.query(models.Ticket).get(ticket_id)
         if not ticket:
             raise ServerAPIException("no such ticket")
         return ticket.resource
 
-    @cached_session
-    def collectTicket(self, ticket_id, session=None):
+    @dump_thread_decorator
+    def collectTicket(self, ticket_id):
         output = {
             'ready': False,
             'output': None,
         }
-        resource = self._checkTicket(ticket_id)
-        if resource:
-            output['output'] = resource.data
-            output['ready'] = True
-
+        with session_scope() as session:
+            resource = self._checkTicket(ticket_id, session)
+            if resource:
+                output['output'] = resource.data
+                output['ready'] = True
         return output
 
-    @cached_session
+
+    @dump_thread_decorator
     def waitTicket(self, ticket_id):
         """ ... blocking! ... """
         output = ""
-        while True:
-            ticket = self.session.query(models.Ticket).get(ticket_id)
-            if not ticket.tid:
-                ticket.tid = self.my_id()
-                self.session.add(ticket)
-                self.session.commit()
-                continue
 
-            if ticket.resource:
-                return ticket.resource.output
+        with session_scope() as session:
+            ticket = session.query(models.Ticket).get(ticket_id)
+            ticket.tid = self.my_id()
+            session.add(ticket)
+
+        while True:
+            with session_scope() as session:
+                ticket = session.query(models.Ticket).get(ticket_id)
+                if ticket.resource:
+                    return ticket.resource.data
 
             with self.sync.resource_ready:
                 while self.sync.resource_ready.wait(timeout=10):
                     if self.sync.tid==self.my_id():
                         break
 
-    @cached_session
+    @dump_thread_decorator
     def closeTicket(self, ticket_id):
-        ticket = self.session.query(models.Ticket).get(ticket_id)
-        ticket.state = TState.CLOSED
-        self.session.add(ticket)
-        self.session.commit()
-        self.sync.ticket.set()
+        with session_scope() as session:
+            ticket = session.query(models.Ticket).get(ticket_id)
+            ticket.state = TState.CLOSED
+            self.sync.ticket.set()

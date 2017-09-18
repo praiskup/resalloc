@@ -20,6 +20,7 @@
 import time
 import threading
 
+from resalloc import helpers
 from resalloc.server import db, models, api
 from resalloc.server.manager import Manager
 import queue
@@ -63,10 +64,11 @@ class Server(threading.Thread):
 
 
 if __name__ == "__main__":
+    helpers.dump_trhead_id()
+
     # Create the database, if not exist yet.
-    session = db.Session()
-    models.Base.metadata.create_all(session.get_bind())
-    db.Session.remove()
+    with db.session_scope() as session:
+        models.Base.metadata.create_all(session.get_bind())
 
     # Synchronization tool.
     sync = Synchronizer()

@@ -13,10 +13,10 @@ class Ticket(object):
     def collect(self):
         output = self.connection.collectTicket(self.id)
         self.output = output['output']
-        return output['ready']
+        return str(output['ready'])
 
     def wait(self):
-        return output.self.connection.waitTicket(self.id)
+        return str(self.connection.waitTicket(self.id))
 
     def close(self):
         self.connection.closeTicket(self.id)

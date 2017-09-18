@@ -39,6 +39,13 @@ parser_get_ticket = subparsers.add_parser(
 parser_get_ticket.add_argument(
         "ticket",
         help="Get the ticket")
+parser_wait_ticket = subparsers.add_parser(
+        "ticket-wait",
+        help="Wait till ticket is ready and write the output"
+)
+parser_wait_ticket.add_argument(
+        "ticket",
+        help="Get the ticket")
 parser_close_ticket = subparsers.add_parser(
         "ticket-close",
         help="Close a ticket")
@@ -62,7 +69,10 @@ if __name__ == "__main__":
             else:
                 sys.stderr.write("ticket is still not processed\n")
         elif 'ticket-wait' == arg.subparser:
-            pass
+            conn = Connection(arg.connection)
+            ticket = conn.getTicket(arg.ticket)
+            output = ticket.wait()
+            sys.stderr.write(str(output))
         elif 'ticket-close' == arg.subparser:
             conn = Connection(arg.connection)
             ticket = conn.getTicket(arg.ticket)

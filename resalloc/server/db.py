@@ -17,14 +17,23 @@
 
 import os
 from sqlalchemy import create_engine
+from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import sessionmaker, scoped_session
 from resalloc.server.config import CONFIG
-import threading
+from contextlib import contextmanager
 
-threadLocal = threading.local()
+engine = create_engine(CONFIG['db_url'], poolclass=NullPool)
+Session = scoped_session(sessionmaker(bind=engine))
 
-engine = create_engine(CONFIG['db_url'])
-def EngineSingleton():
-    return engine
-
-Session = scoped_session(sessionmaker(bind=EngineSingleton()))
+@contextmanager
+def session_scope():
+    """Provide a transactional scope around a series of operations."""
+    session = Session()
+    try:
+        yield session
+        session.commit()
+    except Exception as err:
+        session.rollback()
+        raise
+    finally:
+        session.close()

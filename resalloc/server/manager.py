@@ -19,6 +19,7 @@ import os, sys
 import threading
 import subprocess
 from resalloc.server import db, models
+from resalloc.server.db import session_scope
 from resalloc import helpers
 from resalloc.helpers import RState
 from resalloc.server.logic import QResources, QTickets
@@ -36,15 +37,14 @@ class Worker(threading.Thread):
 
 class TerminateWorker(Worker):
     def close(self):
-        session = db.Session()
-        resource = session.query(models.Resource).get(self.resource_id)
-        resource.state = RState.ENDED
-        session.add(resource)
-        session.commit()
-        db.Session.remove()
-        self.event.set()
+        with session_scope() as session:
+            resource = session.query(models.Resource).get(self.resource_id)
+            resource.state = RState.ENDED
+            session.add(resource)
+            self.event.set()
 
     def run(self):
+        helpers.dump_trhead_id("TerminateWorker")
         if not self.pool.cmd_delete:
             self.close()
             return
@@ -59,6 +59,7 @@ class TerminateWorker(Worker):
 class AllocWorker(Worker):
 
     def run(self):
+        helpers.dump_trhead_id("AllocWorker")
         # Run the allocation script.
 
         print("running spinup command: {0}".format(self.pool.cmd_new))
@@ -70,25 +71,23 @@ class AllocWorker(Worker):
             output = e.output
             retval = e.returncode
 
-        session = db.Session()
-        resource = session.query(models.Resource).get(self.resource_id)
-        resource.state = RState.ENDED if retval else RState.UP
-        # TODO: limit for output size?
-        resource.data = output
-        tags = []
-        if type(self.pool.tags) != type([]):
-            print("'tags' is not array")
-        else:
-            for tag in self.pool.tags:
-                tag_obj = models.ResourceTag()
-                tag_obj.id = tag
-                tag_obj.resource_id = resource.id
-                tags.append(tag_obj)
+        with session_scope() as session:
+            resource = session.query(models.Resource).get(self.resource_id)
+            resource.state = RState.ENDED if retval else RState.UP
+            # TODO: limit for output size?
+            resource.data = output
+            tags = []
+            if type(self.pool.tags) != type([]):
+                print("'tags' is not array")
+            else:
+                for tag in self.pool.tags:
+                    tag_obj = models.ResourceTag()
+                    tag_obj.id = tag
+                    tag_obj.resource_id = resource.id
+                    tags.append(tag_obj)
 
-        print("the state == " + resource.state)
-        session.add_all(tags + [resource])
-        session.commit()
-        db.Session.remove()
+            print("the state == " + resource.state)
+            session.add_all(tags + [resource])
 
         # Notify manager that it is worth doing re-spin.
         self.event.set()
@@ -113,13 +112,19 @@ class Pool(object):
         assert(self.cmd_new)
         assert(self.cmd_delete)
 
-    def allocate(self, session):
-        resource = models.Resource()
-        resource.pool = self.name
-        session.add(resource)
-        session.commit()
-        print ("allocating id {0}".format(resource.id))
-        AllocWorker(self.event, self, int(resource.id)).start()
+    def allocate(self):
+        helpers.dump_trhead_id('allocate')
+        resource_id = None
+        with session_scope() as session:
+            resource = models.Resource()
+            resource.pool = self.name
+            session.add(resource)
+            session.flush()
+            resource_id = resource.id
+
+        if resource_id:
+            print ("allocating id {0}".format(resource_id))
+            AllocWorker(self.event, self, int(resource_id)).start()
 
     def from_dict(self, data):
         allowed_types = [int, str, dict, type(None)]
@@ -143,10 +148,13 @@ class Pool(object):
             else:
                 setattr(self, key, data[key])
 
-    def _allocate_more_resources(self, session):
+    def _allocate_more_resources(self):
+        helpers.dump_trhead_id('alloate_more_resources')
         while True:
-            qres = QResources(session)
-            up, ready, starting, taken = qres.stats()
+            with session_scope() as session:
+                qres = QResources(session)
+                up, ready, starting, taken = qres.stats()
+
             print("pool {0}, ready {1}, starting {2}, taken {3}, up {4}"\
                     .format(self.name, ready, starting, taken, up))
             if up >= self.max \
@@ -154,13 +162,16 @@ class Pool(object):
                    or starting >= self.max_starting:
                 # Quota reached, don't allocate more.
                 break
+            self.allocate()
 
-            self.allocate(session)
+    def _garbage_collector(self):
+        to_terminate = []
+        with session_scope() as session:
+            qres = QResources(session)
+            to_terminate = [x.id for x in qres.clean_candidates().all()]
 
-    def _garbage_collector(self, session):
-        qres = QResources(session)
-        for resource in qres.clean_candidates().all():
-            TerminateWorker(self.event, self, int(resource.id)).start()
+        for res in to_terminate:
+            TerminateWorker(self.event, self, int(res)).start()
 
 
 class Manager(object):
@@ -172,26 +183,36 @@ class Manager(object):
         with self.sync.resource_ready:
             self.sync.resource_ready.notify_all()
 
-    def _assign_tickets(self, session):
-        qticket = QTickets(session)
-        tickets = qticket.new().order_by(models.Ticket.id).all()
+    def _assign_tickets(self):
+        helpers.dump_trhead_id('assign_tickets')
+        with session_scope() as session:
+            qticket = QTickets(session)
+            tickets = [x.id for x in qticket.new().order_by(models.Ticket.id).all()]
 
-        for ticket in tickets:
-            qres = QResources(session)
-            resources = qres.ready().all()
-            ticket_tags = ticket.tag_set
-            for resource in resources:
-                res_tags = resource.tag_set
-                if ticket_tags.issubset(res_tags):
-                    ticket.resource = resource
-                    session.add_all([resource, ticket])
-                    session.commit()
-                    if ticket.tid:
-                        self._notify_waiting(ticket.tid)
+        for ticket_id in tickets:
+            try:
+                ticket = session.query(models.Ticket).get(ticket_id)
+                qres = QResources(session)
+                resources = qres.ready().all()
+                ticket_tags = ticket.tag_set
+                for resource in resources:
+                    res_tags = resource.tag_set
+                    if ticket_tags.issubset(res_tags):
+                        ticket.resource = resource
+                        session.add_all([resource, ticket])
+                        session.commit()
+                        if ticket.tid:
+                            self._notify_waiting(ticket.tid)
                     break
+            except:
+                session.rollback()
+                raise
+            finally:
+                session.close()
 
 
     def _reload_config(self):
+        helpers.dump_trhead_id('reload_configs')
         config_file = os.path.join(CONFIG_DIR, "pools.yaml")
         config = helpers.load_config_file(config_file)
 
@@ -206,13 +227,11 @@ class Manager(object):
 
 
     def _loop(self):
-        session = db.Session()
-        self._assign_tickets(session)
+        self._assign_tickets()
         pools = self._reload_config()
         for pool in pools:
-            pool._allocate_more_resources(session)
-            pool._garbage_collector(session)
-        session.commit()
+            pool._allocate_more_resources()
+            pool._garbage_collector()
         print("loop done...")
 
 

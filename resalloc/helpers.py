@@ -19,6 +19,7 @@ import os, sys
 import copy
 import six
 import yaml
+import threading
 
 class StateSetException(Exception):
     def __init__(self, message):
@@ -79,3 +80,6 @@ def load_config_file(path):
         if not type(config) == dict:
             raise Exception("Configuration is not dictionary")
         return config
+
+def dump_trhead_id(xx="--"):
+    sys.stderr.write("{0} {1}\n".format(threading.current_thread().ident, xx))

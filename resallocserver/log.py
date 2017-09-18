@@ -17,7 +17,7 @@
 
 
 import logging
-from resalloc.server.config import CONFIG
+from resallocserver.config import CONFIG
 
 def get_logger(loggername):
     log = logging.getLogger(loggername)

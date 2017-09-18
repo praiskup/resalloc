@@ -1,0 +1,3 @@
+include requirements.txt
+include COPYING
+recursive-include resalloc *.py

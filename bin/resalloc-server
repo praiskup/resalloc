@@ -21,8 +21,8 @@ import time
 import threading
 
 from resalloc import helpers
-from resalloc.server import db, models, api
-from resalloc.server.manager import Manager
+from resallocserver import db, models, api
+from resallocserver.manager import Manager
 import queue
 
 PORT = 8000

@@ -6,7 +6,7 @@ from sqlalchemy import engine_from_config, pool
 from logging.config import fileConfig
 
 # Alembic needs to know where to find the configuration.
-additional_path = os.path.dirname(os.path.abspath(__file__)) + "/../../../"
+additional_path = os.path.dirname(os.path.abspath(__file__)) + "/../../"
 
 local_configdir = os.path.join(additional_path, "etc")
 if os.path.exists(local_configdir):
@@ -14,9 +14,9 @@ if os.path.exists(local_configdir):
 
 sys.path = [additional_path] + sys.path
 
-from resalloc.server.config import CONFIG
-from resalloc.server.db import engine
-from resalloc.server.models import Base
+from resallocserver.config import CONFIG
+from resallocserver.db import engine
+from resallocserver.models import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

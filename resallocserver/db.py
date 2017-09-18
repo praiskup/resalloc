@@ -19,8 +19,9 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import sessionmaker, scoped_session
-from resalloc.server.config import CONFIG
 from contextlib import contextmanager
+
+from resallocserver.config import CONFIG
 
 engine = create_engine(CONFIG['db_url'], poolclass=NullPool)
 Session = scoped_session(sessionmaker(bind=engine))

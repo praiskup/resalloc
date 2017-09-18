@@ -20,13 +20,13 @@ import time
 import threading
 import subprocess
 import warnings
-from resalloc.server import db, models
-from resalloc.server.db import session_scope
 from resalloc import helpers
 from resalloc.helpers import RState
-from resalloc.server.log import get_logger
-from resalloc.server.logic import QResources, QTickets
-from resalloc.server.config import CONFIG_DIR
+from resallocserver import db, models
+from resallocserver.db import session_scope
+from resallocserver.log import get_logger
+from resallocserver.logic import QResources, QTickets
+from resallocserver.config import CONFIG_DIR
 from sqlalchemy import or_
 
 log = get_logger(__name__)

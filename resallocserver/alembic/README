@@ -1,6 +1,6 @@
 If you change the models.py file, always go through this:
 
-    $ cd resalloc/server
+    $ cd resallocserver
     $ alembic revision --autogenerate -m 'short description'
     $ vim ..the_generated_file.. # Fix the script!
 

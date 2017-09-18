@@ -17,8 +17,8 @@
 
 import sys
 import time
-from resalloc.server import db, models
-from resalloc.server.db import session_scope
+from resallocserver import db, models
+from resallocserver.db import session_scope
 from resalloc.helpers import TState
 import threading
 

@@ -32,6 +32,15 @@ from sqlalchemy import or_
 log = get_logger(__name__)
 
 
+def run_command(func, res_id, res_name, command):
+    log.debug("running: " + command)
+    pfx = 'RESALLOC_'
+    env = os.environ
+    env[pfx + 'ID']   = str(res_id)
+    env[pfx + 'NAME'] = str(res_name)
+    return func(command, env=env, shell=True)
+
+
 def reload_config():
     config_file = os.path.join(CONFIG_DIR, "pools.yaml")
     config = helpers.load_config_file(config_file)
@@ -72,6 +81,8 @@ class TerminateWorker(Worker):
             resource = session.query(models.Resource).get(self.resource_id)
             resource.state = RState.DELETING
             session.add(resource)
+            session.flush()
+            session.expunge(resource)
 
         self.log.debug("TerminateWorker(pool={0}): \"{1}\""\
                 .format(self.pool.name, self.pool.cmd_delete))
@@ -79,11 +90,13 @@ class TerminateWorker(Worker):
             self.close()
             return
 
-        try:
-            subprocess.check_output(self.pool.cmd_delete, shell=True)
-            self.close()
-        except subprocess.CalledProcessError as e:
-            return
+        run_command(
+                subprocess.call,
+                resource.id,
+                resource.name,
+                self.pool.cmd_delete,
+        )
+        self.close()
 
 
 class AllocWorker(Worker):
@@ -98,17 +111,25 @@ class AllocWorker(Worker):
                 )
         )
 
+        with session_scope() as session:
+            resource = session.query(models.Resource).get(self.resource_id)
+            session.expunge(resource)
+
         # Run the allocation script.
         retval = 0
         output = ''
         try:
-            output = subprocess.check_output(self.pool.cmd_new, shell=True)
+            output = run_command(
+                subprocess.check_output,
+                resource.id,
+                resource.name,
+                self.pool.cmd_new
+            )
         except subprocess.CalledProcessError as e:
             output = e.output
             retval = e.returncode
 
         with session_scope() as session:
-            resource = session.query(models.Resource).get(self.resource_id)
             resource.state = RState.ENDED if retval else RState.UP
             # TODO: limit for output size?
             resource.data = output
@@ -157,7 +178,11 @@ class Watcher(threading.Thread):
                 continue
 
             failed_count = 0
-            rc = subprocess.call(pool.cmd_livecheck, shell=True)
+            rc = run_command(
+                    subprocess.call,
+                    res_id,
+                    data['name'],
+                    pool.cmd_livecheck)
             with session_scope() as session:
                 res = session.query(models.Resource).get(res_id)
                 res.check_last_time = time.time()
@@ -195,7 +220,7 @@ class Pool(object):
     cmd_livecheck = None
     livecheck_period = 600
     tags = None
-    name_pattern = "{pool_name}_ID{id}_{datetime}"
+    name_pattern = "{pool_name}_{id}_{datetime}"
 
     def __init__(self, name):
         self.name = name
@@ -216,7 +241,7 @@ class Pool(object):
             session.flush()
             resource_id = resource.id
             fill_dict = dict(
-                id=resource_id,
+                id=str(resource_id).zfill(8),
                 pool_name=self.name)
             resource.name = helpers.careful_string_format(
                     self.name_pattern, fill_dict)

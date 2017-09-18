@@ -15,6 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import time
 from sqlalchemy import Column, DateTime, String, Integer, Float, ForeignKey, func
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
@@ -55,7 +56,7 @@ class Resource(Base, TagMixin):
     data = Column(String)
     pool = Column(String, nullable=False)
     state = Column(String, nullable=False, default=RState.STARTING)
-    check_last_time  = Column(Float, default=0)
+    check_last_time = Column(Float, default=time.time())
     check_failed_count = Column(Integer, default=0)
 
 

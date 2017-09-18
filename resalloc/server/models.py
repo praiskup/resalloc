@@ -55,6 +55,8 @@ class Resource(Base, TagMixin):
     data = Column(String)
     pool = Column(String, nullable=False)
     state = Column(String, nullable=False, default=RState.STARTING)
+    check_last_time  = Column(Float, default=0)
+    check_failed_count = Column(Integer, default=0)
 
 
 class ResourceTag(Base):

@@ -31,6 +31,22 @@ from sqlalchemy import or_
 
 log = get_logger(__name__)
 
+
+def reload_config():
+    config_file = os.path.join(CONFIG_DIR, "pools.yaml")
+    config = helpers.load_config_file(config_file)
+
+    pools = {}
+    for pool_id in config:
+        assert not pool_id in pools
+        pool = Pool(pool_id)
+        pool.from_dict(config[pool_id])
+        pool.validate()
+        pools[pool_id] = pool
+
+    return pools
+
+
 class Worker(threading.Thread):
     def __init__(self, event, pool, res_id):
         self.resource_id = res_id
@@ -116,14 +132,53 @@ class AllocWorker(Worker):
 
 
 class Watcher(threading.Thread):
+    def loop(self):
+        log.debug("Watcher loop")
+        pools = reload_config()
+        to_check = {}
+        with session_scope() as session:
+            up = QResources(session).up().all()
+            for item in up:
+                if not item.pool in pools:
+                    continue
+                to_check[item.id] = {
+                    'name': item.name,
+                    'pool': item.pool,
+                    'last': item.check_last_time,
+                    'fail': item.check_failed_count,
+                }
+
+        for res_id, data in to_check.items():
+            pool = pools[data['pool']]
+            if not pool.cmd_livecheck:
+                continue
+            if data['last'] + pool.livecheck_period > time.time():
+                # Not yet needed check.
+                continue
+
+            failed_count = 0
+            rc = subprocess.call(pool.cmd_livecheck, shell=True)
+            with session_scope() as session:
+                res = session.query(models.Resource).get(res_id)
+                res.check_last_time = time.time()
+                if rc:
+                    res.check_failed_count = res.check_failed_count + 1
+                    log.debug("failed check #{0} for {1}"\
+                            .format(res.check_failed_count, res_id))
+                else:
+                    res.check_failed_count = 0
+                session.add(res)
+                session.flush()
+                failed_count = res.check_failed_count
+
+            if failed_count >= 3:
+                log.debug("Watcher plans to kill {0}".format(res_id))
+                TerminateWorker(self.event, pool, res_id).start()
+
     def run(self):
         while True:
-            to_check = {}
-            with session_scope() as session:
-                up = QResources(session).up().all()
-                for item in up:
-                    to_check[item.id] = item.name
-            time.sleep(30)
+            self.loop()
+            time.sleep(10)
 
 
 class Pool(object):
@@ -138,18 +193,18 @@ class Pool(object):
     cmd_new = None
     cmd_delete = None
     cmd_livecheck = None
+    livecheck_period = 600
     tags = None
 
-    def __init__(self, name, event):
+    def __init__(self, name):
         self.name = name
-        self.event = event
 
 
     def validate(self):
         assert(self.cmd_new)
         assert(self.cmd_delete)
 
-    def allocate(self):
+    def allocate(self, event):
         resource_id = None
         with session_scope() as session:
             dbinfo = session.query(models.Pool).get(self.name)
@@ -162,7 +217,7 @@ class Pool(object):
 
         if resource_id:
             self.last_start = time.time()
-            AllocWorker(self.event, self, int(resource_id)).start()
+            AllocWorker(event, self, int(resource_id)).start()
 
     def from_dict(self, data):
         allowed_types = [int, str, dict, type(None)]
@@ -203,7 +258,7 @@ class Pool(object):
             log.debug("too soon for Pool('{0}')".format(self.name))
         return is_too_soon
 
-    def _allocate_more_resources(self):
+    def _allocate_more_resources(self, event):
         while True:
             with session_scope() as session:
                 qres = QResources(session)
@@ -221,16 +276,16 @@ class Pool(object):
                 # Quota reached, don't allocate more.
                 break
 
-            self.allocate()
+            self.allocate(event)
 
-    def _garbage_collector(self):
+    def _garbage_collector(self, event):
         to_terminate = []
         with session_scope() as session:
             qres = QResources(session)
             to_terminate = [x.id for x in qres.clean_candidates().all()]
 
         for res in to_terminate:
-            TerminateWorker(self.event, self, int(res)).start()
+            TerminateWorker(event, self, int(res)).start()
 
 
 class Manager(object):
@@ -268,30 +323,20 @@ class Manager(object):
                 self._notify_waiting(notify_ticket)
 
 
-    def _reload_config(self):
-        config_file = os.path.join(CONFIG_DIR, "pools.yaml")
-        config = helpers.load_config_file(config_file)
-
-        pools = []
-        for pool_id in config:
-            pool = Pool(pool_id, self.sync.ticket)
-            pool.from_dict(config[pool_id])
-            pool.validate()
-            pools.append(pool)
-
-        return pools
-
-
     def _loop(self):
+        log.debug("Manager's loop.")
         self._assign_tickets()
-        pools = self._reload_config()
-        for pool in pools:
-            pool._allocate_more_resources()
-            pool._garbage_collector()
-        log.debug("loop done...")
+        for _, pool in reload_config().items():
+            pool._allocate_more_resources(self.sync.ticket)
+            pool._garbage_collector(self.sync.ticket)
 
 
     def run(self):
+        watcher = Watcher()
+        watcher.event = self.sync.ticket
+        watcher.daemon = True
+        watcher.start()
+
         self._loop()
         while True:
             # Wait for the request to set the event (or timeout).

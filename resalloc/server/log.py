@@ -20,7 +20,7 @@ import logging
 from resalloc.server.config import CONFIG
 
 def get_logger(loggername):
-    log = logging.getLogger()
+    log = logging.getLogger(loggername)
     log.setLevel(logging.DEBUG)
     file_formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s')

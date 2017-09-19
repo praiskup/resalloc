@@ -71,16 +71,19 @@ useradd -r -g "$group" -G "$group" -s /sbin/nologin \
 
 %files
 %license COPYING
+%doc README
 %{_bindir}/%{name}
 
 
 %files -n python3-%srcname
+%doc README
 %license COPYING
 %{python3_sitelib}/%{name}
 %{python3_sitelib}/%{name}-*.egg-info
 
 
 %files server
+%doc README
 %license COPYING
 %{python3_sitelib}/%{name}server
 %{_bindir}/%{name}-server

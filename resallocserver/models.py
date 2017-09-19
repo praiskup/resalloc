@@ -39,7 +39,6 @@ class Pool(Base):
 class Ticket(Base, TagMixin):
     __tablename__ = 'tickets'
     id = Column(Integer, primary_key=True)
-    name = Column(String)
     resource_id = Column(Integer, ForeignKey('resources.id'))
     resource = relationship('Resource',
                             backref=backref('ticket', uselist=False))

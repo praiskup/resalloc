@@ -45,6 +45,9 @@ setup(
     data_files=[
         ('/etc/resallocserver', ['config/pools.yaml', 'config/server.yaml']),
     ],
+    package_data={
+        'resallocserver': ['alembic.ini'],
+    },
     scripts=['bin/resalloc', 'bin/resalloc-server'],
     install_requires=get_requirements(),
 )

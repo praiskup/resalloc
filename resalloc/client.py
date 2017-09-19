@@ -1,4 +1,12 @@
-import xmlrpclib
+C_XMLRPC = None
+
+try:
+    import xmlrpclib
+    C_XMLRPC = xmlrpclib.ServerProxy
+except:
+    import xmlrpc.client
+    C_XMLRPC = xmlrpc.client.ServerProxy
+
 
 class ResallocClientException(Exception):
     pass
@@ -26,7 +34,7 @@ class Connection(object):
     connection = None
 
     def __init__(self, conn):
-        self.connection = xmlrpclib.ServerProxy(conn)
+        self.connection = C_XMLRPC(conn)
 
     def newTicket(self, tags=None):
         if tags == None:

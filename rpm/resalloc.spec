@@ -1,6 +1,10 @@
 %global srcname resalloc
 %global postrel .dev0
 
+%global sysuser  resalloc
+%global sysgroup %sysuser
+%global _logdir  %_var/log/%{name}server
+
 Name:       %srcname
 Summary:    Resource allocator - Client
 Version:    0%{?postrel}
@@ -41,6 +45,7 @@ python3 setup.py build
 %install
 python3 setup.py install --root=%{buildroot}
 mkdir -p %buildroot%_unitdir
+mkdir -p %buildroot%_logdir
 install -p -m 644 %SOURCE1 %buildroot%_unitdir
 find %buildroot
 
@@ -49,8 +54,8 @@ find %buildroot
 
 
 %pre server
-user=resalloc
-group=$user
+user=%sysuser
+group=%sysgroup
 getent group "$user" >/dev/null || groupadd -r "$group"
 getent passwd "$user" >/dev/null || \
 useradd -r -g "$group" -G "$group" -s /sbin/nologin \
@@ -79,14 +84,16 @@ useradd -r -g "$group" -G "$group" -s /sbin/nologin \
 %license COPYING
 %{python3_sitelib}/%{name}server
 %{_bindir}/%{name}-server
-%dir %{_sysconfdir}/%{name}server
+%attr(0700, %sysuser, %sysgroup) %dir %{_sysconfdir}/%{name}server
 %config(noreplace) %{_sysconfdir}/%{name}server/*
 %_unitdir/resalloc.service
+%attr(0700, %sysuser, %sysgroup) %dir %_logdir
 
 
 %changelog
 * Tue Sep 19 2017 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-2
 - add service file
+- install log directory for server
 
 * Mon Sep 18 2017 Pavel Raiskup <praiskup@redhat.com>
 - no changelog

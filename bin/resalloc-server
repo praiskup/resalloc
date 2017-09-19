@@ -23,6 +23,7 @@ import threading
 
 from resalloc import helpers
 from resallocserver import db, models, api
+from resallocserver.config import CONFIG
 from resallocserver.manager import Manager
 import alembic.config
 import queue
@@ -54,7 +55,7 @@ class Server(threading.Thread):
     server = None
 
     def run(self):
-        self.server = CLSXMLRPC(("localhost", 8000))
+        self.server = CLSXMLRPC((CONFIG['host'], CONFIG['port']))
         self.server.allow_none = True
         self.server.daemon_threads = True
         self.server.register_introspection_functions()

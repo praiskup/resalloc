@@ -1,0 +1,12 @@
+[Unit]
+Description=Resource allocator server
+After=network.target
+
+[Service]
+Type=simple
+
+User=resalloc
+Group=resalloc
+
+Environment=CONFIG_DIR=/etc/resallocserver
+ExecStart=/usr/bin/resalloc-server

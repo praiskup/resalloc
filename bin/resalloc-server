@@ -17,12 +17,14 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import os
 import time
 import threading
 
 from resalloc import helpers
 from resallocserver import db, models, api
 from resallocserver.manager import Manager
+import alembic.config
 import queue
 
 PORT = 8000
@@ -63,10 +65,28 @@ class Server(threading.Thread):
         self.server.shutdown()
 
 
-if __name__ == "__main__":
-    # Create the database, if not exist yet.
+def init_by_alembic():
+    alembic_dir = os.path.dirname(db.__file__)
+    with helpers.pushd(alembic_dir):
+        print(os.getcwd())
+        alembicArgs = [
+        '--raiseerr',
+        'upgrade', 'head',
+        ]
+        alembic.config.main(argv=alembicArgs)
+
+
+def init_by_models():
     with db.session_scope() as session:
         models.Base.metadata.create_all(session.get_bind())
+
+
+if __name__ == "__main__":
+    # Create the database, if not exist yet.
+    if db.engine.dialect.name == 'sqlite':
+        init_by_models()
+    else:
+        init_by_alembic()
 
     # Synchronization tool.
     sync = Synchronizer()

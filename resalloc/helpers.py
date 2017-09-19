@@ -21,6 +21,7 @@ import six
 import yaml
 import threading
 import datetime
+from contextlib import contextmanager
 
 class StateSetException(Exception):
     def __init__(self, message):
@@ -100,3 +101,13 @@ def careful_string_format(pattern, fill_dict):
         break
 
     return result
+
+
+@contextmanager
+def pushd(path):
+    old_dir = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(old_dir)

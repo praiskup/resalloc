@@ -9,7 +9,7 @@ License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
 
-Requires:   python3-%srcname
+Requires:   python3-%srcname = %version-%release
 BuildRequires: python3-setuptools python3-devel
 
 Source0:    %{name}-%{version}.tar.gz
@@ -20,7 +20,7 @@ Client/Server application for managing of (expensive) resources.
 
 %package server
 Summary:    Resource Allocator - Server
-Requires:   python3-%srcname
+Requires:   python3-%srcname = %version-%release
 %description server
 Server side
 

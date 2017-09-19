@@ -60,6 +60,8 @@ find %buildroot
 %license COPYING
 %{python3_sitelib}/%{name}server
 %{_bindir}/%{name}-server
+%dir %{_sysconfdir}/%{name}server
+%config(noreplace) %{_sysconfdir}/%{name}server/*
 
 
 %changelog

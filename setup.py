@@ -42,6 +42,9 @@ setup(
     url='https://github.com/praiskup/resalloc',
     platforms=['any'],
     packages=find_packages(),
+    data_files=[
+        ('/etc/resallocserver', ['config/pools.yaml', 'config/server.yaml']),
+    ],
     scripts=['bin/resalloc', 'bin/resalloc-server'],
     install_requires=get_requirements(),
 )

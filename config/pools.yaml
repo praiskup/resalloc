@@ -1,0 +1,41 @@
+##  Refernce Resalloc Server's  pools.yaml configuration file.
+##
+##  # the name for the "pool" of resources (VMs this time)
+##  pool_vm_jenkins_x86_64:
+##      # Maximum number of resources allowed at the same time.
+##      max: 7
+##
+##      # Limit maximum number of starting instances.  This helps if starting more
+##      # instances at the same time could DDoS the resource provider.
+##      max_starting: 2
+##
+##      # Maximum number of resources to be pre-allocated.  Taken resources are not
+##      # counted into this limit (if some users takes some resource, a new resource
+##      # is automatically started instead in background - up to this limit).
+##      max_prealloc: 4
+##
+##      # This command is run to allocate a new resource.  If the command succeeds
+##      # (exit_status==0), resalloc considers this resource to be allocated
+##      # correctly and marks it as "UP" in database.  If the command fails,
+##      # resalloc tries to spin-up new resource instead.
+##      # WARNING: This needs to be atomic command -- either every "sub-resource" is
+##      # allocated correctly (networks, disks, ...), or nothing.  Resalloc pays not
+##      # attention to clean-up actions if 'cmd_new' fails.
+##      cmd_new: "/bin/allocate-vm"
+##
+##      # This command is run to check that the VM is up.  If the command succeeds,
+##      # resource is considered to be working.
+##      cmd_livecheck: "/bin/check-vm"
+##
+##      # Check each 300 seconds whether the VM responds.
+##      livecheck_period: 300
+##
+##      # Delete the resource (and sub-resources, if any).
+##      # TODO: The atomicity specification needs to be polished.
+##      cmd_delete: "/bin/terminate-vm"
+##
+##      # List of tags which any resource coming from this pool will have.  Based on
+##      # this, resources are assigned to user's tickets.
+##      tags:
+##          - ci_test_machine_x86_64
+##          - ci_test_machine

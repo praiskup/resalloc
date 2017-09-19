@@ -19,7 +19,7 @@ import os
 import yaml
 from resalloc.helpers import merge_dict, load_config_file
 
-config_dir = "/etc/resalloc"
+config_dir = "/etc/resallocserver"
 if 'CONFIG_DIR' in os.environ:
     config_dir = os.environ['CONFIG_DIR']
 

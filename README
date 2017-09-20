@@ -34,8 +34,8 @@ Typical client use-cases
 2. get the resource, and periodically check till it is available
 
     $ ticket=$(resalloc ticket --tag x86_64 --tag jenkins_vm)
-    $ while ! resalloc ticket-get $ticket; do true; done
-    $ output=$(resalloc ticket-get $ticket)
+    $ while ! resalloc ticket-check $ticket; do true; done
+    $ output=$(resalloc ticket-check $ticket)
 
 Then, you can work with the resource:
 

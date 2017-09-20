@@ -21,10 +21,15 @@ import sys
 import argparse
 
 from resalloc.client import Ticket, Connection
+from resalloc.version import resalloc_version
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
         "--connection", dest="connection", default="http://localhost:8000")
+parser.add_argument(
+        '--version', action='version',
+        version='%(prog)s (client) {0}'.format(resalloc_version))
 
 subparsers = parser.add_subparsers(title="actions", dest='subparser')
 subparsers.required = True
@@ -32,10 +37,11 @@ parser_new_ticket = subparsers.add_parser(
         "ticket",
         help="Create ticket")
 parser_new_ticket.add_argument(
-        "--tag", dest="create_tags", action="append",
+        "--tag", dest="tags", action="append",
+        required=True,
         help="What tag the Resource should have")
 parser_get_ticket = subparsers.add_parser(
-        "ticket-get",
+        "ticket-check",
         help="Obtain ticket")
 parser_get_ticket.add_argument(
         "ticket",
@@ -58,26 +64,28 @@ def main():
     try:
         arg = parser.parse_args()
 
+        conn = Connection(arg.connection)
         if 'ticket' == arg.subparser:
-            conn = Connection(arg.connection)
-            ticket = conn.newTicket(arg.create_tags)
+            ticket = conn.newTicket(arg.tags)
             print(ticket.id)
-        elif 'ticket-get' == arg.subparser:
-            conn = Connection(arg.connection)
+
+        elif 'ticket-check' == arg.subparser:
             ticket = conn.getTicket(arg.ticket)
             if ticket.collect():
                 sys.stdout.write(str(ticket.output))
             else:
                 sys.stderr.write("ticket is still not processed\n")
+                return 1
+
         elif 'ticket-wait' == arg.subparser:
-            conn = Connection(arg.connection)
             ticket = conn.getTicket(arg.ticket)
             output = ticket.wait()
             sys.stderr.write(str(output))
+
         elif 'ticket-close' == arg.subparser:
-            conn = Connection(arg.connection)
             ticket = conn.getTicket(arg.ticket)
             ticket.close()
+
         else:
             assert(0)
 

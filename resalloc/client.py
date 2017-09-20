@@ -20,8 +20,10 @@ class Ticket(object):
 
     def collect(self):
         output = self.connection.collectTicket(self.id)
-        self.output = output['output']
-        return str(output['ready'])
+        ready = output['ready']
+        if ready:
+            self.output = output['output']
+        return ready
 
     def wait(self):
         return str(self.connection.waitTicket(self.id))

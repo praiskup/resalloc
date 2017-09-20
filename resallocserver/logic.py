@@ -21,9 +21,11 @@ from sqlalchemy.orm import Query
 
 
 class QObject(object):
-    def __init__(self, session=None):
+    def __init__(self, session=None, pool=None):
         if session:
             self.query = self.query.with_session(session)
+        if pool:
+            self.query = self.query.filter_by(pool=pool)
 
 class QResources(QObject):
     query = Query(models.Resource)

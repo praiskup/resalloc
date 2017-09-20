@@ -292,7 +292,7 @@ class Pool(object):
     def _allocate_more_resources(self, event):
         while True:
             with session_scope() as session:
-                qres = QResources(session)
+                qres = QResources(session, pool=self.name)
                 stats = qres.stats()
 
             msg = "=> POOL('{0}'):".format(self.name)
@@ -312,7 +312,7 @@ class Pool(object):
     def _garbage_collector(self, event):
         to_terminate = []
         with session_scope() as session:
-            qres = QResources(session)
+            qres = QResources(session, pool=self.name)
             to_terminate = [x.id for x in qres.clean_candidates().all()]
 
         for res in to_terminate:

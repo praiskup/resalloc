@@ -27,6 +27,7 @@ parser.add_argument(
         "--connection", dest="connection", default="http://localhost:8000")
 
 subparsers = parser.add_subparsers(title="actions", dest='subparser')
+subparsers.required = True
 parser_new_ticket = subparsers.add_parser(
         "ticket",
         help="Create ticket")
@@ -53,7 +54,7 @@ parser_close_ticket.add_argument(
         "ticket",
         help="Get the ticket")
 
-if __name__ == "__main__":
+def main():
     try:
         arg = parser.parse_args()
 
@@ -77,7 +78,12 @@ if __name__ == "__main__":
             conn = Connection(arg.connection)
             ticket = conn.getTicket(arg.ticket)
             ticket.close()
+        else:
+            assert(0)
 
     except KeyboardInterrupt:
         sys.stderr.write("\nInterrupted by user.")
         sys.exit(1)
+
+if __name__ == "__main__":
+    sys.exit(main())

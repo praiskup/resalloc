@@ -79,13 +79,18 @@ class TerminateWorker(Worker):
     def job(self):
         with session_scope() as session:
             resource = session.query(models.Resource).get(self.resource_id)
+            if resource.ticket:
+                if resource.ticket.state == helpers.TState.OPEN:
+                    log.warning("can't delete {0}, ticket opened"\
+                                .format(resource.name))
+                    return
             resource.state = RState.DELETING
             session.add(resource)
             session.flush()
             session.expunge(resource)
 
-        self.log.debug("TerminateWorker(pool={0}): \"{1}\""\
-                .format(self.pool.name, self.pool.cmd_delete))
+        self.log.debug("TerminateWorker(pool={0}): name={1} by: \"{2}\""\
+                .format(self.pool.name, resource.name, self.pool.cmd_delete))
         if not self.pool.cmd_delete:
             self.close()
             return
@@ -309,14 +314,20 @@ class Pool(object):
 
             self.allocate(event)
 
+    def _detect_closed_tickets(self):
+        with session_scope() as session:
+            qres = QResources(session, pool=self.name)
+            for res in qres.clean_candidates().all():
+                res.state = RState.DELETE_REQUEST
+                session.add(res)
+
+
     def _garbage_collector(self, event):
         to_terminate = []
         with session_scope() as session:
             qres = QResources(session, pool=self.name)
-            to_terminate = [x.id for x in qres.clean_candidates().all()]
-
-        for res in to_terminate:
-            TerminateWorker(event, self, int(res)).start()
+            for res in qres.clean().all():
+                TerminateWorker(event, self, int(res.id)).start()
 
 
 class Manager(object):
@@ -359,6 +370,7 @@ class Manager(object):
         self._assign_tickets()
         for _, pool in reload_config().items():
             pool._allocate_more_resources(self.sync.ticket)
+            pool._detect_closed_tickets()
             pool._garbage_collector(self.sync.ticket)
 
 

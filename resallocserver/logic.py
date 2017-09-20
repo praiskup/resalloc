@@ -18,6 +18,7 @@
 from resalloc.helpers import RState, TState
 from resallocserver import models
 from sqlalchemy.orm import Query
+from sqlalchemy import or_
 
 
 class QObject(object):
@@ -60,9 +61,14 @@ class QResources(QObject):
         return {key: len(value) for (key, value) in items.items()}
 
     def clean_candidates(self):
-        return self.on().join(models.Ticket)\
-                        .filter(models.Ticket.state == TState.CLOSED)
+        return self.on().filter(models.Resource.state != RState.DELETING)\
+                        .outerjoin(models.Ticket)\
+                        .filter(or_(
+                            models.Ticket.state == TState.CLOSED,
+                        ))
 
+    def clean(self):
+        return self.on().filter_by(state=RState.DELETE_REQUEST)
 
 
 class QTickets(QObject):

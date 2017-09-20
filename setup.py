@@ -48,6 +48,6 @@ setup(
     package_data={
         'resallocserver': ['alembic.ini'],
     },
-    scripts=['bin/resalloc', 'bin/resalloc-server'],
+    scripts=['bin/resalloc', 'bin/resalloc-server', 'bin/resalloc-maint'],
     install_requires=get_requirements(),
 )

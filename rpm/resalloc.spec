@@ -8,7 +8,7 @@
 Name:       %srcname
 Summary:    Resource allocator - Client
 Version:    0%{?postrel}
-Release:    2%{?dist}
+Release:    3%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -58,8 +58,9 @@ user=%sysuser
 group=%sysgroup
 getent group "$user" >/dev/null || groupadd -r "$group"
 getent passwd "$user" >/dev/null || \
-useradd -r -g "$group" -G "$group" -s /sbin/nologin \
+useradd -r -g "$group" -G "$group" -s /bin/bash \
         -c "resalloc server's user" "$user"
+usermod -d "%{python3_sitelib}/%{name}server" "$user"
 
 
 %post server
@@ -87,6 +88,7 @@ useradd -r -g "$group" -G "$group" -s /sbin/nologin \
 %license COPYING
 %{python3_sitelib}/%{name}server
 %{_bindir}/%{name}-server
+%{_bindir}/%{name}-maint
 %attr(0700, %sysuser, %sysgroup) %dir %{_sysconfdir}/%{name}server
 %config(noreplace) %{_sysconfdir}/%{name}server/*
 %_unitdir/resalloc.service
@@ -94,6 +96,10 @@ useradd -r -g "$group" -G "$group" -s /sbin/nologin \
 
 
 %changelog
+* Wed Sep 20 2017 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-3
+- resalloc user is not nologin anymore
+- add resalloc-maint
+
 * Tue Sep 19 2017 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-2
 - add service file
 - install log directory for server

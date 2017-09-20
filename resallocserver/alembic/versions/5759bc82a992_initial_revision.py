@@ -1,8 +1,8 @@
 """Initial revision
 
-Revision ID: 5ee77b680c30
+Revision ID: 5759bc82a992
 Revises: 
-Create Date: 2017-09-19 10:38:59.166668
+Create Date: 2017-09-20 09:11:54.520899
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '5ee77b680c30'
+revision = '5759bc82a992'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -26,7 +26,7 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=True),
     sa.Column('user', sa.String(), nullable=True),
-    sa.Column('data', sa.String(), nullable=True),
+    sa.Column('data', sa.LargeBinary(), nullable=True),
     sa.Column('pool', sa.String(), nullable=False),
     sa.Column('state', sa.String(), nullable=False),
     sa.Column('check_last_time', sa.Float(), nullable=True),
@@ -41,7 +41,6 @@ def upgrade():
     )
     op.create_table('tickets',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('name', sa.String(), nullable=True),
     sa.Column('resource_id', sa.Integer(), nullable=True),
     sa.Column('state', sa.String(), nullable=True),
     sa.Column('tid', sa.String(), nullable=True),
@@ -54,6 +53,7 @@ def upgrade():
     sa.ForeignKeyConstraint(['ticket_id'], ['tickets.id'], ),
     sa.PrimaryKeyConstraint('id', 'ticket_id')
     )
+    # ### end Alembic commands ###
 
 
 def downgrade():

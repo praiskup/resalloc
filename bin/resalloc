@@ -26,7 +26,7 @@ from resalloc.version import resalloc_version
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-        "--connection", dest="connection", default="http://localhost:8000")
+        "--connection", dest="connection", default="http://localhost:49100")
 parser.add_argument(
         '--version', action='version',
         version='%(prog)s (client) {0}'.format(resalloc_version))

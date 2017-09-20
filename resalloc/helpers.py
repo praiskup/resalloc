@@ -90,7 +90,7 @@ def careful_string_format(pattern, fill_dict):
 
     fill_dict['datetime'] = datetime.datetime.now().isoformat()\
                                     .replace('-', '').replace('T', '_')\
-                                    .replace(':', '').replace('.', '')
+                                    .replace(':', '')[:-7]
 
     while True:
         try:

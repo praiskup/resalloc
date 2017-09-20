@@ -16,7 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import time
-from sqlalchemy import Column, DateTime, String, Integer, Float, ForeignKey, func
+from sqlalchemy import Column, DateTime, String, Integer, Float, ForeignKey, func, LargeBinary
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -52,7 +52,7 @@ class Resource(Base, TagMixin):
     name = Column(String, nullable=True)
     user = Column(String, nullable=True)
     # The output from 'allocation' script.
-    data = Column(String)
+    data = Column(LargeBinary)
     pool = Column(String, nullable=False)
     state = Column(String, nullable=False, default=RState.STARTING)
     check_last_time = Column(Float, default=time.time())

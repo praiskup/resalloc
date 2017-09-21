@@ -42,13 +42,7 @@ class Maintainer(object):
             log.error("no resources specified")
             return
 
-        with session_scope() as session:
-            for res_id in resources:
-                resource = session.query(Resource).get(res_id)
-                if not resource:
-                    log.error("no such resource {0}".format(res_id))
-                    continue
-
-                resource.state = RState.DELETE_REQUEST
-                session.add(resource)
-
+        for res_id in resources:
+            with session_scope() as session:
+                resources = QResources(session=session)
+                resources.kill(res_id)

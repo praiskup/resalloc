@@ -22,9 +22,12 @@ from sqlalchemy import or_
 
 
 class QObject(object):
+    session = None
+
     def __init__(self, session=None, pool=None):
         if session:
             self.query = self.query.with_session(session)
+            self.session = session
         if pool:
             self.query = self.query.filter_by(pool=pool)
 
@@ -69,6 +72,19 @@ class QResources(QObject):
 
     def clean(self):
         return self.on().filter_by(state=RState.DELETE_REQUEST)
+
+    def kill(self, res_id):
+        # Only open tickets assigned to by resource, if any.
+        ticket_update = self.session.query(models.Ticket)\
+                                    .filter_by(resource_id=res_id)\
+                                    .filter_by(state=TState.OPEN)\
+                                    .update({'state': TState.FAILED})
+
+        # Killing only UP resources, for now.  It might have sense to terminate
+        # STARTING, but this is not yet solved.
+        self.query.filter_by(id=res_id)\
+                  .filter_by(state=RState.UP)\
+                  .update({'state': RState.DELETE_REQUEST})
 
 
 class QTickets(QObject):

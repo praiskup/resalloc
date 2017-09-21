@@ -54,7 +54,14 @@ class RState(StateSet):
     ]
 
 class TState(StateSet):
-    values = ['OPEN', 'CLOSED']
+    values = [
+        # ticket with or without assigned resource
+        'OPEN',
+        # ticket was closed by user
+        'CLOSED',
+        # Ticket was "killed" by resource manager or admin.
+        'FAILED',
+    ]
 
 def merge_dict(origin, override):
     def _merge_dict(origin, override):

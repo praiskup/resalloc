@@ -31,7 +31,6 @@ from sqlalchemy import or_
 
 log = get_logger(__name__)
 
-
 def run_command(func, res_id, res_name, command):
     log.debug("running: " + command)
     pfx = 'RESALLOC_'

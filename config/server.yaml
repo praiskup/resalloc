@@ -17,3 +17,6 @@ main_logfile: '/var/log/resallocserver/main.log'
 
 # Port to make the xmlrpc server listen on.
 #port: 49100
+
+# Set to 'debug' to get more verbose logging.
+#loglevel: info

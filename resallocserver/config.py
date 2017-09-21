@@ -30,6 +30,7 @@ CONFIG = {
     # Bind the xmlrpc server to this hostname/port.
     'host': 'localhost',
     'port': 49100,
+    'loglevel': 'info',
 }
 
 CONFIG_DIR = config_dir

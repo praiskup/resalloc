@@ -25,8 +25,11 @@ from resalloc import helpers
 from resallocserver import db, models, api
 from resallocserver.config import CONFIG
 from resallocserver.manager import Manager
+from resallocserver.log import get_logger
 import alembic.config
 import queue
+
+log = get_logger(__name__)
 
 PORT = 8000
 CLSXMLRPC = None
@@ -67,9 +70,9 @@ class Server(threading.Thread):
 
 
 def init_by_alembic():
+    log.debug("alembic init")
     alembic_dir = os.path.dirname(db.__file__)
     with helpers.pushd(alembic_dir):
-        print(os.getcwd())
         alembicArgs = [
         '--raiseerr',
         'upgrade', 'head',

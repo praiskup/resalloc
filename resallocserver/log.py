@@ -21,12 +21,15 @@ from resallocserver.config import CONFIG
 
 def get_logger(loggername):
     log = logging.getLogger(loggername)
-    log.setLevel(logging.DEBUG)
+    loglevel = logging.getLevelName(CONFIG['loglevel'].upper())
+    logfile = CONFIG['main_logfile']
+    log.setLevel(loglevel)
     file_formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    main_file = logging.FileHandler(CONFIG['main_logfile'])
-    main_file.setLevel(logging.DEBUG)
+    main_file = logging.FileHandler(logfile)
+    main_file.setLevel(loglevel)
     main_file.setFormatter(file_formatter)
     log.addHandler(main_file)
-    log.addHandler(logging.StreamHandler())
+    stderr = logging.StreamHandler()
+    log.addHandler(stderr)
     return log

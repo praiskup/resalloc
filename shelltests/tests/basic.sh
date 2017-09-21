@@ -67,6 +67,7 @@ cat > etc/server.yaml <<EOF
 db_url: "$dburl"
 main_logfile: $WORKDIR/main-log
 port: $SERVER_PORT
+loglevel: debug
 EOF
 
 export CONFIG_DIR=$WORKDIR/etc

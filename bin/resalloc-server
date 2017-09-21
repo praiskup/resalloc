@@ -49,6 +49,17 @@ except:
 
 
 class AtomicEvent(object):
+    """
+    Similar to threading.Event(), though there's no need to clear() the event
+    explicitly.  The clear() method is "called" automatically and atomically, in
+    pretty short critical section when no other thread can set() the event.
+    This way, it is guaranteed that no set() call will be missed by manager
+    between explicit wait() and clear().
+
+    We could actually use plain threading.Condition instead, but to not loose
+    any of the notify() actions, the whole time-period of manager's loop would
+    have to be in critical section (too long).
+    """
     event = threading.Event()
     cond = threading.Condition()
 
@@ -59,12 +70,15 @@ class AtomicEvent(object):
 
     def wait(self, timeout=None):
         with self.cond:
-            if self.event.is_set():
-                self.event.clear()
-                return
-            # Unlock && wait.
-            self.cond.wait(timeout=timeout)
-            # Locked again, so unlock and continue ...
+            if not self.event.is_set():
+                # Unlock && wait.
+                self.cond.wait(timeout=timeout)
+                # Locked again, so unlock and continue ...
+
+            # even if we are woken up by other thread's set(), clear the event
+            # since it was set too by that set() method (to avoid additional
+            # spin).
+            self.event.clear()
 
 
 class Synchronizer(object):

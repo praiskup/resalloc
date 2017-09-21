@@ -24,17 +24,23 @@ from resallocserver.log import get_logger
 log = get_logger
 
 class Maintainer(object):
-    def resource_list(self):
+    def resource_list(self, up=None):
         with session_scope() as session:
             resources = QResources(session)
-            for resource in resources.on().all():
-                msg = "{id} - {name} pool={pool} tags={tags}"
+            if up:
+                resources = resources.up()
+            else:
+                resources = resources.on()
+
+            for resource in resources.all():
+                msg = "{id} - {name} pool={pool} tags={tags} status={status}"
                 tags = ','.join(list(resource.tag_set))
                 print(msg.format(
                     id=resource.id,
                     name=resource.name,
                     pool=resource.pool,
-                    tags=tags
+                    tags=tags,
+                    status=resource.state,
                 ))
 
     def resource_delete(self, resources=None):

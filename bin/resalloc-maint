@@ -26,9 +26,12 @@ parser = argparse.ArgumentParser()
 subparsers = parser.add_subparsers(title="actions", dest='subparser')
 subparsers.required = True
 
-subparsers.add_parser(
+p_list = subparsers.add_parser(
         "resource-list",
         help="List available resources")
+p_list.add_argument(
+        "--up", dest='up', action='store_true',
+        help="List only ready-to-take resources")
 
 parser_resource_delete = subparsers.add_parser(
         "resource-delete",
@@ -43,7 +46,7 @@ def main():
         maint = Maintainer()
 
         if 'resource-list' in args.subparser:
-            maint.resource_list()
+            maint.resource_list(up=args.up)
 
         elif 'resource-delete' in args.subparser:
             maint.resource_delete(args.resource)

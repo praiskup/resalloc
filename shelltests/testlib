@@ -1,6 +1,4 @@
-#!/bin/sh
-
-# Tester wrapper for resalloc server to ease testing.
+# Testing library.
 # Copyright (C) 2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,11 +15,28 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-proj_cli_dir="$(dirname "$(readlink -f "$0")")"/..
-wrapper=$(basename "$0")
+set -e
 
-export PYTHON=${PYTHON:-`which python3`}
-export PYTHONPATH="$proj_cli_dir${PYTHONPATH+:$PYTHONPATH}"
-export CONFIG_DIR=$proj_cli_dir/etc
+: ${TESTTOOLDIR=../test-tooling}
+TESTTOOLDIR=$(readlink -f "$TESTTOOLDIR")
 
-$PYTHON $proj_cli_dir/bin/"$wrapper" "$@"
+# Everything as absolute dirs, please.
+SERVER_BIN=$TESTTOOLDIR/resalloc-server
+CLIENT_BIN=$TESTTOOLDIR/resalloc
+MAINT_BIN=$TESTTOOLDIR/resalloc-maint
+# TODO: get unique port
+SERVER_PORT=55554
+
+client () { "$CLIENT_BIN" --connection http://localhost:"$SERVER_PORT" "$@" ; }
+server () { "$SERVER_BIN" "$@" & server_pid=$! ; }
+maint () { "$MAINT_BIN" "$@";  }
+
+: ${WORKDIR=`mktemp -d`}
+
+info  () { echo >&2 " * $*" ; }
+debug () { echo >&2 " ~ $*" ; }
+error () { echo >&2 "ERROR: $*" ; }
+fail  () { echo >&2 "FAIL: $*"; false ; }
+fatal () { echo >&2 "FATAL: $*"; exit 1 ; }
+
+# vi: ft=sh

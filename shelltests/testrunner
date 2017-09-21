@@ -29,6 +29,8 @@ for TEST_NAME; do
     if ! ./tests/"$TEST_NAME" ; then
         status=FAIL
         result=false
+    else
+        test -d "$TMPDIR" && rm -rf "$TMPDIR"
     fi
 
     echo "                              ---> [ $status ]"

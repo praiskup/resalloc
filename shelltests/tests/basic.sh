@@ -27,7 +27,6 @@ DBNAME=resalloc-test
 cd "$WORKDIR"
 
 debug "I'm in $PWD"
-
 cleanup_actions=()
 cleanup ()
 {
@@ -66,7 +65,7 @@ esac
 
 cat > etc/server.yaml <<EOF
 db_url: "$dburl"
-main_log: $WORKDIR/main-log
+main_logfile: $WORKDIR/main-log
 port: $SERVER_PORT
 EOF
 
@@ -142,6 +141,7 @@ kill $waiting_pid
 
 info "release one ticket and check that the waiting ticket now succeeds"
 client ticket-close 1 &>/dev/null
+sleep 2
 client ticket-wait "$id" &>/dev/null  &
 waiting_pid=$!
 sleep 1

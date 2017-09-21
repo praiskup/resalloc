@@ -51,6 +51,7 @@ find %buildroot
 
 
 %check
+make check
 
 
 %pre server

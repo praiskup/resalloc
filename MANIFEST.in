@@ -1,3 +1,6 @@
-include requirements.txt
 include COPYING
+include Makefile
+include requirements.txt
 recursive-include resalloc *.py
+recursive-include shelltests *.sh testrunner testlib
+recursive-include test-tooling resalloc* wrap

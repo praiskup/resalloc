@@ -17,20 +17,22 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+# Hack, avoid generating WORKDIR for now
+WORKDIR=/tmp
 . ./testlib
 
 result=true
 for TEST_NAME; do
     echo "===> running test 'tests/$TEST_NAME'"
 
-    export TMPDIR=$(mktemp -d /tmp/resalloc-tests-$TEST_NAME-XXXXXXX)
+    export WORKDIR=$(mktemp -d /tmp/resalloc-tests-$TEST_NAME-XXXXXXX)
 
     status=OK
     if ! ./tests/"$TEST_NAME" ; then
         status=FAIL
         result=false
     else
-        test -d "$TMPDIR" && rm -rf "$TMPDIR"
+        test -d "$WORKDIR" && rm -rf "$WORKDIR"
     fi
 
     echo "                              ---> [ $status ]"

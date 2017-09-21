@@ -27,7 +27,6 @@ from resallocserver.config import CONFIG
 from resallocserver.manager import Manager
 from resallocserver.log import get_logger
 import alembic.config
-import queue
 
 log = get_logger(__name__)
 

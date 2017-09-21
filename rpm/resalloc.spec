@@ -53,13 +53,13 @@ BuildRequires: postgresql-server
 %if %{with python3}
 BuildRequires: python3-setuptools
 BuildRequires: python3-devel
-BuildRequires: %server3_both_requires
+BuildRequires: %server3_both_requires python3-psycopg2
 %endif
 
 %if %{with python2}
 BuildRequires: python2-setuptools
 BuildRequires: python2-devel
-BuildRequires: %server2_both_requires
+BuildRequires: %server2_both_requires %python2-psycopg2
 %endif
 
 
@@ -136,7 +136,16 @@ set -- "$@" python2
 set -- "$@" python3
 %endif %{with python3}
 
-make check TEST_PYTHONS="$*" TEST_DATABASES=sqlite
+initdb data
+pg_ctl start -w -o "-p 54321 -k /tmp" -D data
+cleanup()
+{
+  pg_ctl stop -D data
+}
+trap cleanup EXIT
+
+export POSTGRESQL_PORT=54321
+make check TEST_PYTHONS="$*"
 
 
 %pre server

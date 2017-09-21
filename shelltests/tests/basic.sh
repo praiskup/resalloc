@@ -56,9 +56,11 @@ dburl="sqlite:///$WORKDIR/server-sql"
 case $DATABASE in
     sqlite) ;;
     postgresql)
-        dburl="postgresql://$uname@/$DBNAME"
-        createdb "$DBNAME"
-        cleanup_actions+=( "dropdb $DBNAME" )
+        port=${POSTGRESQL_PORT-5432}
+        dburl="postgresql://$uname@/$DBNAME?host=/tmp&port=$port"
+        createdb -p $port -h /tmp "$DBNAME"
+        cleanup_actions+=( "dropdb -p $port -h /tmp $DBNAME" )
+        port=${POSTGRESQL_PORT-5432}
         ;;
     *) false ;;
 esac

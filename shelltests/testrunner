@@ -21,7 +21,7 @@
 
 result=true
 for TEST_NAME; do
-    echo "==> running test 'tests/$TEST_NAME' <=="
+    echo "===> running test 'tests/$TEST_NAME'"
 
     export TMPDIR=$(mktemp -d /tmp/resalloc-tests-$TEST_NAME-XXXXXXX)
 

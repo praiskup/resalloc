@@ -19,6 +19,8 @@
 
 PREALLOC=5
 MAX=15
+DBNAME=resalloc-test
+: ${DATABASE=sqlite}
 
 . ./testlib
 
@@ -50,8 +52,20 @@ basic:
         - B
 EOF
 
+uname=$(id -u -n)
+dburl="sqlite:///$WORKDIR/server-sql"
+case $DATABASE in
+    sqlite) ;;
+    postgresql)
+        dburl="postgresql://$uname@/$DBNAME"
+        createdb "$DBNAME"
+        cleanup_actions+=( "dropdb $DBNAME" )
+        ;;
+    *) false ;;
+esac
+
 cat > etc/server.yaml <<EOF
-db_url: 'sqlite:///$WORKDIR/server-sql'
+db_url: "$dburl"
 main_log: $WORKDIR/main-log
 port: $SERVER_PORT
 EOF

@@ -48,8 +48,27 @@ except:
     CLSXMLRPC = wrap
 
 
+class AtomicEvent(object):
+    event = threading.Event()
+    cond = threading.Condition()
+
+    def set(self):
+        with self.cond:
+            self.event.set()
+            self.cond.notify()
+
+    def wait(self, timeout=None):
+        with self.cond:
+            if self.event.is_set():
+                self.event.clear()
+                return
+            # Unlock && wait.
+            self.cond.wait(timeout=timeout)
+            # Locked again, so unlock and continue ...
+
+
 class Synchronizer(object):
-    ticket = threading.Event()
+    ticket = AtomicEvent()
     resource_ready = threading.Condition()
     resource_tid = None
 

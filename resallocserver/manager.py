@@ -383,7 +383,6 @@ class Manager(object):
         while True:
             # Wait for the request to set the event (or timeout).
             self.sync.ticket.wait(timeout=20)
-            self.sync.ticket.clear()
             # Until the wait() is called again, any additional event.set() call
             # means another round (even though it might do nothing).
             self._loop()

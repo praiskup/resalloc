@@ -9,6 +9,7 @@ before_install:
 
 before_script:
   - export PATH=$PATH:/usr/lib/postgresql/9.6/bin
+  - git submodule update --init
 
 python:
   - "2.7"
@@ -16,6 +17,6 @@ python:
   - "3.6"
 
 install:
-  - "pip install -r requirements.txt"
+  - "pip install -r requirements.txt -r buildrequirements.txt"
 
-script: "make check TEST_PYTHONS=python${TRAVIS_PYTHON_VERSION}"
+script: "python$TRAVIS_PYTHON_VERSION setup.py install --root `pwd` && make check TEST_PYTHONS=python${TRAVIS_PYTHON_VERSION}"

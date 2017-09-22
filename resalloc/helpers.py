@@ -84,6 +84,9 @@ def merge_dict(origin, override):
 
 
 def load_config_file(path):
+    if 'BUILD_MANPAGES_RUNNING' in os.environ:
+        return {}
+
     with open(path, 'r') as fd:
         config = yaml.load(fd)
         if not config:

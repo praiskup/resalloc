@@ -1,3 +1,8 @@
 __pycache__
 *.py[oc]
 *egg*
+
+# The setup.py leftovers.
+build
+dist
+man

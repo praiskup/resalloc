@@ -15,9 +15,22 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import os, sys
 from setuptools import setup, find_packages
 from resalloc.version import resalloc_version
 from os import listdir, path
+
+# For the manual pages generator.
+from setuptools.command.build_py import build_py
+from setuptools.command.install import install
+try:
+    from build_manpages.build_manpages.build_manpages \
+            import build_manpages, get_build_py_cmd, get_install_cmd
+except:
+    print("=======================================")
+    print("Use 'git submodule update --init' first")
+    print("=======================================")
+    raise
 
 project = "resalloc"
 datadir = "share"
@@ -50,4 +63,9 @@ setup(
     },
     scripts=['bin/resalloc', 'bin/resalloc-server', 'bin/resalloc-maint'],
     install_requires=get_requirements(),
+    cmdclass={
+        'build_manpages': build_manpages,
+        'build_py': get_build_py_cmd(build_py),
+        'install': get_install_cmd(install),
+    },
 )

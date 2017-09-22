@@ -52,13 +52,13 @@ parser_wait_ticket = subparsers.add_parser(
 )
 parser_wait_ticket.add_argument(
         "ticket",
-        help="Get the ticket")
+        help="ID of ticket to wait for")
 parser_close_ticket = subparsers.add_parser(
         "ticket-close",
         help="Close a ticket")
 parser_close_ticket.add_argument(
         "ticket",
-        help="Get the ticket")
+        help="ID of ticket to be closed")
 
 def main():
     try:

@@ -1,5 +1,4 @@
 alembic
-psycopg2
 pyyaml
 six
 sqlalchemy

@@ -1,3 +1,5 @@
+#! /bin/bash
+
 # Shell tests runner.
 # Copyright (C) 2017 Red Hat, Inc.
 #

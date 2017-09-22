@@ -56,11 +56,14 @@ dburl="sqlite:///$WORKDIR/server-sql"
 case $DATABASE in
     sqlite) ;;
     postgresql)
-        port=${POSTGRESQL_PORT-5432}
-        dburl="postgresql://$uname@/$DBNAME?host=/tmp&port=$port"
-        createdb -p $port -h /tmp "$DBNAME"
-        cleanup_actions+=( "dropdb -p $port -h /tmp $DBNAME" )
-        port=${POSTGRESQL_PORT-5432}
+        port=${POSTGRESQL_PORT-65432}
+        host=/tmp
+        datadir=$WORKDIR/pgdata
+        info "preparing PostgreSQL server"
+        postgresql_start "$port" "$datadir" "$host" &>/dev/null
+        createdb -p "$port" -h "$host" "$DBNAME"
+        cleanup_actions+=( "pg_ctl stop -D \"$datadir\" -m i >/dev/null" )
+        dburl="postgresql://$uname@/$DBNAME?host=$host&port=$port"
         ;;
     *) false ;;
 esac
@@ -144,10 +147,9 @@ kill $waiting_pid
 
 info "release one ticket and check that the waiting ticket now succeeds"
 client ticket-close 1 &>/dev/null
-sleep 2
 client ticket-wait "$id" &>/dev/null  &
 waiting_pid=$!
-sleep 1
+sleep 5
 ! kill $waiting_pid &>/dev/null
 client ticket-check "$id" >/dev/null
 
@@ -155,7 +157,7 @@ info "close all the tickets now and check that again $PREALLOC is up"
 for i in $(seq 2 $(( MAX + 1 ))); do
     client ticket-close "$i"
 done
-sleep 2
+sleep 5
 
 up=$(maint resource-list --up | wc -l)
 test "$up" -eq "$PREALLOC"

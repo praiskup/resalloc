@@ -136,15 +136,6 @@ set -- "$@" python2
 set -- "$@" python3
 %endif %{with python3}
 
-initdb data
-pg_ctl start -w -o "-p 54321 -k /tmp" -D data
-cleanup()
-{
-  pg_ctl stop -D data
-}
-trap cleanup EXIT
-
-export POSTGRESQL_PORT=54321
 make check TEST_PYTHONS="$*"
 
 

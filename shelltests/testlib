@@ -39,4 +39,13 @@ error () { echo >&2 "ERROR: $*" ; }
 fail  () { echo >&2 "FAIL: $*"; false ; }
 fatal () { echo >&2 "FATAL: $*"; exit 1 ; }
 
+# postgresql_start PORT DIR SOCKETDIR
+# -----------------------------------
+postgresql_start ()
+{
+    local PORT="$1" DIR="$2" SOCKETDIR="$3"
+    initdb "$DIR"
+    pg_ctl start -w -o "-p $PORT -k $SOCKETDIR" -D "$DIR"
+}
+
 # vi: ft=sh

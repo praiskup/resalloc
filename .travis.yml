@@ -1,0 +1,21 @@
+language: python
+
+before_install:
+  # The debian package starts the server :/
+  - echo exit 101 | sudo tee /usr/sbin/policy-rc.d
+  - sudo chmod +x /usr/sbin/policy-rc.d
+  - sudo apt-get -qq update
+  - sudo apt-get install -y postgresql-9.6 postgresql-client-9.6
+
+before_script:
+  - export PATH=$PATH:/usr/lib/postgresql/9.6/bin
+
+python:
+  - "2.7"
+  - "3.5"
+  - "3.6"
+
+install:
+  - "pip install -r requirements.txt"
+
+script: "make check TEST_PYTHONS=python${TRAVIS_PYTHON_VERSION}"

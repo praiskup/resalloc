@@ -42,7 +42,7 @@
 Name:       %srcname
 Summary:    Resource allocator - Client
 Version:    0%{?postrel}
-Release:    4%{?dist}
+Release:    5%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -160,6 +160,7 @@ usermod -d "%{default_sitelib}/%{name}server" "$user"
 %license COPYING
 %doc README
 %{_bindir}/%{name}
+%_mandir/man1/%{name}.1*
 
 
 %if %{with python3}
@@ -190,9 +191,13 @@ usermod -d "%{default_sitelib}/%{name}server" "$user"
 %config(noreplace) %{_sysconfdir}/%{name}server/*
 %_unitdir/resalloc.service
 %attr(0700, %sysuser, %sysgroup) %dir %_logdir
+%_mandir/man1/%{name}-maint.1*
 
 
 %changelog
+* Tue Sep 26 2017 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-5
+- install manual pages
+
 * Thu Sep 21 2017 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-4
 - python2/python3 fixes
 

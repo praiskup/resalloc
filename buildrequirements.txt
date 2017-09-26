@@ -1,2 +1,1 @@
-configparser
 psycopg2

@@ -5,6 +5,8 @@
 %global sysgroup %sysuser
 %global _logdir  %_var/log/%{name}server
 
+%bcond_without check
+
 # Huh, ugly hacks.
 %global python2_alembic    python-alembic
 %global python2_sqlalchemy python-sqlalchemy
@@ -127,6 +129,7 @@ mkdir -p %buildroot%_logdir
 install -p -m 644 %SOURCE1 %buildroot%_unitdir
 
 
+%if %{with check}
 %check
 set --
 %if %{with python2}
@@ -137,6 +140,7 @@ set -- "$@" python3
 %endif %{with python3}
 
 make check TEST_PYTHONS="$*"
+%endif
 
 
 %pre server
@@ -197,6 +201,7 @@ usermod -d "%{default_sitelib}/%{name}server" "$user"
 %changelog
 * Tue Sep 26 2017 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-5
 - install manual pages
+- add '--with check' option
 
 * Thu Sep 21 2017 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-4
 - python2/python3 fixes

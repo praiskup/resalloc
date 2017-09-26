@@ -44,7 +44,7 @@
 Name:       %srcname
 Summary:    Resource allocator - Client
 Version:    0%{?postrel}
-Release:    5%{?dist}
+Release:    6%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -126,6 +126,7 @@ done
 
 mkdir -p %buildroot%_unitdir
 mkdir -p %buildroot%_logdir
+mkdir -p %buildroot%_sharedstatedir/%{name}server
 install -p -m 644 %SOURCE1 %buildroot%_unitdir
 
 
@@ -196,9 +197,13 @@ usermod -d "%{default_sitelib}/%{name}server" "$user"
 %_unitdir/resalloc.service
 %attr(0700, %sysuser, %sysgroup) %dir %_logdir
 %_mandir/man1/%{name}-maint.1*
+%attr(0700, %sysuser, %sysgroup) %_sharedstatedir/%{name}server
 
 
 %changelog
+* Tue Sep 26 2017 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-6
+- create datadir directory for database files
+
 * Tue Sep 26 2017 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-5
 - install manual pages
 - add '--with check' option

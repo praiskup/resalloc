@@ -80,7 +80,7 @@ def main():
         elif 'ticket-wait' == arg.subparser:
             ticket = conn.getTicket(arg.ticket)
             output = ticket.wait()
-            sys.stderr.write(str(output))
+            print(str(output))
 
         elif 'ticket-close' == arg.subparser:
             ticket = conn.getTicket(arg.ticket)

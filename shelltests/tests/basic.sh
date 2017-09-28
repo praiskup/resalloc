@@ -153,6 +153,10 @@ client ticket-wait "$id" &>/dev/null  &
 waiting_pid=$!
 sleep 5
 ! kill $waiting_pid &>/dev/null
+
+name=$(client ticket-wait "$id")
+test -n "$name"
+
 client ticket-check "$id" >/dev/null
 
 info "close all the tickets now and check that again $PREALLOC is up"

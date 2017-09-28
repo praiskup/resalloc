@@ -44,7 +44,7 @@
 Name:       %srcname
 Summary:    Resource allocator - Client
 Version:    0%{?postrel}
-Release:    6%{?dist}
+Release:    7%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -201,6 +201,10 @@ usermod -d "%{default_sitelib}/%{name}server" "$user"
 
 
 %changelog
+* Thu Sep 28 2017 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-7
+- resalloc ticket-wait puts output to stdout
+- new command resalloc-maint ticket-list
+
 * Tue Sep 26 2017 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-6
 - create datadir directory for database files
 

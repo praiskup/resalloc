@@ -42,7 +42,8 @@ parser_resource_delete.add_argument(
 
 p_t_list = subparsers.add_parser(
         "ticket-list",
-        help="List tickets")
+        help="List not-yet-closed tickets")
+
 
 def main():
     try:

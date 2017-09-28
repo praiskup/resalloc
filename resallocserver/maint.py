@@ -16,7 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from resalloc.helpers import RState
-from resallocserver.logic import QResources
+from resallocserver.logic import QResources, QTickets
 from resallocserver.models import Resource
 from resallocserver.db import session_scope
 from resallocserver.log import get_logger
@@ -52,3 +52,21 @@ class Maintainer(object):
             with session_scope() as session:
                 resources = QResources(session=session)
                 resources.kill(res_id)
+
+    def ticket_list(self):
+        with session_scope() as session:
+            tq = QTickets(session)
+            for ticket in tq.not_closed().all():
+                output = ''
+                ticket_line = '{id} - state={state} tags={tags}'
+                tags = ','.join(list(ticket.tag_set))
+                output = ticket_line.format(
+                    id=ticket.id,
+                    state=ticket.state,
+                    tags=tags,
+                )
+
+                if ticket.resource:
+                    output += ' resource=' + ticket.resource.name
+
+                print (output)

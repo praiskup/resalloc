@@ -110,6 +110,9 @@ sleep 3
 up=$(maint resource-list --up | wc -l)
 test "$up" = "$PREALLOC"
 
+# No tickets yet!
+test $(maint ticket-list | wc -l) -eq 0
+
 info "take all the resources which should be available"
 set -- "A B" A "A B" B "B A"
 for _ in $(seq 1 $PREALLOC); do
@@ -125,6 +128,8 @@ sleep 1
 for id in $(seq 1 $PREALLOC); do
     client ticket-check "$id" >/dev/null
 done
+
+test $(maint ticket-list | wc -l) -eq $PREALLOC
 
 info "take some more tickets, to reach the maximum"
 for id in $(seq $(( PREALLOC + 1 )) $MAX); do

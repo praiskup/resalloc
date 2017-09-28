@@ -92,3 +92,6 @@ class QTickets(QObject):
 
     def new(self):
         return self.query.filter_by(resource_id=None)
+
+    def not_closed(self):
+        return self.query.filter(models.Ticket.state != TState.CLOSED)

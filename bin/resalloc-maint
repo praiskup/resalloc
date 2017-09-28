@@ -40,6 +40,10 @@ parser_resource_delete.add_argument(
         "resource",
         help="The resource ID")
 
+p_t_list = subparsers.add_parser(
+        "ticket-list",
+        help="List tickets")
+
 def main():
     try:
         args = parser.parse_args()
@@ -50,6 +54,9 @@ def main():
 
         elif 'resource-delete' in args.subparser:
             maint.resource_delete(args.resource)
+
+        elif 'ticket-list' in args.subparser:
+            maint.ticket_list()
 
     except KeyboardInterrupt:
         sys.stderr.write("\nInterrupted by user.")

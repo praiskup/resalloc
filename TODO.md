@@ -1,4 +1,5 @@
 - [ ] documentation
+- [ ] store new/delete logs
 - [x] - README
 - [ ] travis CI
 - [ ]   testsuite

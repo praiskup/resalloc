@@ -44,7 +44,7 @@
 Name:       %srcname
 Summary:    Resource allocator - Client
 Version:    0%{?postrel}
-Release:    7%{?dist}
+Release:    8%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -201,6 +201,9 @@ usermod -d "%{default_sitelib}/%{name}server" "$user"
 
 
 %changelog
+* Fri Sep 29 2017 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-8
+- resalloc-maint resource-delete fix
+
 * Thu Sep 28 2017 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-7
 - resalloc ticket-wait puts output to stdout
 - new command resalloc-maint ticket-list

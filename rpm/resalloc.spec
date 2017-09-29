@@ -44,7 +44,7 @@
 Name:       %srcname
 Summary:    Resource allocator - Client
 Version:    0%{?postrel}
-Release:    8%{?dist}
+Release:    9%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -77,6 +77,7 @@ Client/Server application for managing of (expensive) resources.
 Summary:    Resource Allocator - Server
 Requires:   %default_python-%srcname = %version-%release
 Requires:   %server_both_requires
+Requires(pre): /usr/sbin/useradd /usr/sbin/mkhomedir_helper
 %description server
 Server side
 
@@ -151,7 +152,13 @@ getent group "$user" >/dev/null || groupadd -r "$group"
 getent passwd "$user" >/dev/null || \
 useradd -r -g "$group" -G "$group" -s /bin/bash \
         -c "resalloc server's user" "$user"
-usermod -d "%{default_sitelib}/%{name}server" "$user"
+
+# Meh, we often run ansible scripts by cmd_new etc., and ansible needs
+# write-able home directory (local_tmp/remote_tmp ansible settings is buggy).
+usermod -d "/home/$user" "$user"
+mkhomedir_helper "$user" 0007 || :
+# Simplify "alembic upgrade head" actions.
+ln -sf "%{default_sitelib}/%{name}server" /home/$user/project
 
 
 %post server
@@ -201,6 +208,9 @@ usermod -d "%{default_sitelib}/%{name}server" "$user"
 
 
 %changelog
+* Fri Sep 29 2017 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-9
+- fix homedir for ansible
+
 * Fri Sep 29 2017 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-8
 - resalloc-maint resource-delete fix
 

@@ -38,7 +38,8 @@ parser_resource_delete = subparsers.add_parser(
         help="Delete resource")
 parser_resource_delete.add_argument(
         "resource",
-        help="The resource ID")
+        help="The resource IDs",
+        nargs='+')
 
 p_t_list = subparsers.add_parser(
         "ticket-list",

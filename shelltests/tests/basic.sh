@@ -173,4 +173,16 @@ sleep 5
 up=$(maint resource-list --up | wc -l)
 test "$up" -eq "$PREALLOC"
 
+info "test force-delete of two resources"
+maint resource-delete 20 21
+# hack: enforce manager's loop
+client ticket --tag A >/dev/null
+sleep 3
+
+list=$(maint resource-list)
+test $(echo "$list" | wc -l) -eq $(( PREALLOC + 1 ))
+
+! echo "$list" | grep ^20
+! echo "$list" | grep ^21
+
 # vi: ft=sh

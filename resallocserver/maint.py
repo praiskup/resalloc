@@ -21,7 +21,7 @@ from resallocserver.models import Resource
 from resallocserver.db import session_scope
 from resallocserver.log import get_logger
 
-log = get_logger
+log = get_logger(__name__)
 
 class Maintainer(object):
     def resource_list(self, up=None):
@@ -44,7 +44,7 @@ class Maintainer(object):
                 ))
 
     def resource_delete(self, resources=None):
-        if not resources:
+        if not resources or type(resources) != list:
             log.error("no resources specified")
             return
 

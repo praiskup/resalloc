@@ -11,6 +11,8 @@
       difficult to even terminate the resource.
 - [ ] add on-demand started resources;  those which nave 0 preallocated
       instances, but start if there's ticket for them
+- [ ] cmd\_\* actions should be run under different user than 'resalloc' since
+      that's pretty privileged user
 - [x] packaging for EPEL7
 - [x] systemd service file
 - [x] config

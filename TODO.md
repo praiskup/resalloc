@@ -13,6 +13,7 @@
       instances, but start if there's ticket for them
 - [ ] cmd\_\* actions should be run under different user than 'resalloc' since
       that's pretty privileged user
+- [ ] store into db (and print) the startup time/termianting time
 - [x] packaging for EPEL7
 - [x] systemd service file
 - [x] config

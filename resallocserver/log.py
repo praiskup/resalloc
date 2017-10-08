@@ -15,14 +15,14 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-
+import os
 import logging
 from resallocserver.config import CONFIG
 
 def get_logger(loggername):
     log = logging.getLogger(loggername)
     loglevel = logging.getLevelName(CONFIG['loglevel'].upper())
-    logfile = CONFIG['main_logfile']
+    logfile = os.path.join(CONFIG['logdir'], 'main.log')
     log.setLevel(loglevel)
     file_formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s')

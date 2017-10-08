@@ -9,8 +9,7 @@
 #db_url: 'postgresql://resalloc:pass@localhost:5432/resalloc'
 db_url: 'sqlite:////var/lib/resallocserver/db.sqlite'
 
-# Where the main logging output goes.
-main_logfile: '/var/log/resallocserver/main.log'
+logdir: '/var/log/resallocserver'
 
 # Hostname to make the xmlrpc server listen on.
 #hostname: 'localhost'

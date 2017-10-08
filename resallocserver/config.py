@@ -26,7 +26,7 @@ if 'CONFIG_DIR' in os.environ:
 # Setup defaults.
 CONFIG = {
     'db_url': 'sqlite:////tmp/test-db.sqlite',
-    'main_logfile': '/tmp/main-log',
+    'logdir': '/tmp',
     # Bind the xmlrpc server to this hostname/port.
     'host': 'localhost',
     'port': 49100,

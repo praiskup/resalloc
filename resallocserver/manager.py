@@ -16,6 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
+import errno
 import time
 import threading
 import subprocess
@@ -31,13 +32,24 @@ from sqlalchemy import or_
 
 log = get_logger(__name__)
 
-def run_command(func, res_id, res_name, command):
+def run_command(func, res_id, res_name, command, ltype='alloc'):
     log.debug("running: " + command)
     pfx = 'RESALLOC_'
     env = os.environ
     env[pfx + 'ID']   = str(res_id)
     env[pfx + 'NAME'] = str(res_name)
-    return func(command, env=env, shell=True)
+
+    ldir = os.path.join(CONFIG['logdir'], 'hooks')
+    try:
+        os.mkdir(ldir)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+
+    lfile = os.path.join(ldir, '{0:06d}_{1}'.format(res_id, ltype))
+    with open(lfile, 'a+') as logfile:
+        rv = func(command, env=env, shell=True, stderr=logfile)
+    return rv
 
 
 def reload_config():
@@ -99,6 +111,7 @@ class TerminateWorker(Worker):
                 resource.id,
                 resource.name,
                 self.pool.cmd_delete,
+                'terminate',
         )
         self.close()
 
@@ -186,7 +199,8 @@ class Watcher(threading.Thread):
                     subprocess.call,
                     res_id,
                     data['name'],
-                    pool.cmd_livecheck)
+                    pool.cmd_livecheck,
+                    'watch')
             with session_scope() as session:
                 res = session.query(models.Resource).get(res_id)
                 res.check_last_time = time.time()

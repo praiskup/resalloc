@@ -32,7 +32,7 @@ from sqlalchemy import or_
 
 log = get_logger(__name__)
 
-def run_command(func, res_id, res_name, command, ltype='alloc'):
+def run_command(res_id, res_name, command, ltype='alloc'):
     log.debug("running: " + command)
     pfx = 'RESALLOC_'
     env = os.environ
@@ -47,8 +47,15 @@ def run_command(func, res_id, res_name, command, ltype='alloc'):
             raise
 
     lfile = os.path.join(ldir, '{0:06d}_{1}'.format(res_id, ltype))
-    with open(lfile, 'a+') as logfile:
-        rv = func(command, env=env, shell=True, stderr=logfile)
+    with open(lfile, 'a+b') as logfile:
+        logfile.write(b'--------begin--------\n')
+        logfile.write(b'-----std.err-----\n')
+        rv = subprocess.check_output(command, env=env, shell=True,
+                                     stderr=logfile)
+        logfile.write(b'\n-----std.out-----\n')
+        logfile.write(rv)
+        logfile.write(b'\n---------end---------\n')
+
     return rv
 
 
@@ -107,7 +114,6 @@ class TerminateWorker(Worker):
             return
 
         run_command(
-                subprocess.call,
                 resource.id,
                 resource.name,
                 self.pool.cmd_delete,
@@ -137,7 +143,6 @@ class AllocWorker(Worker):
         output = ''
         try:
             output = run_command(
-                subprocess.check_output,
                 resource.id,
                 resource.name,
                 self.pool.cmd_new
@@ -195,12 +200,16 @@ class Watcher(threading.Thread):
                 continue
 
             failed_count = 0
-            rc = run_command(
-                    subprocess.call,
+            rc = 0
+            try:
+                run_command(
                     res_id,
                     data['name'],
                     pool.cmd_livecheck,
                     'watch')
+            except subprocess.CalledProcessError as e:
+                rc = e.returncode
+
             with session_scope() as session:
                 res = session.query(models.Resource).get(res_id)
                 res.check_last_time = time.time()

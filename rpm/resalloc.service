@@ -10,3 +10,6 @@ Group=resalloc
 
 Environment=CONFIG_DIR=/etc/resallocserver
 ExecStart=/usr/bin/resalloc-server
+
+[Install]
+WantedBy=multi-user.target

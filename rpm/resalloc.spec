@@ -44,7 +44,7 @@
 Name:       %srcname
 Summary:    Resource allocator - Client
 Version:    0%{?postrel}
-Release:    9%{?dist}
+Release:    10%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -208,6 +208,9 @@ ln -sf "%{default_sitelib}/%{name}server" /home/$user/project
 
 
 %changelog
+* Sat Jan 06 2018 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-10
+- service: add WantedBy=multi-user.target
+
 * Fri Sep 29 2017 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-9
 - fix homedir for ansible
 

@@ -160,7 +160,10 @@ sleep 5
 ! kill $waiting_pid &>/dev/null
 
 name=$(client ticket-wait "$id")
-test -n "$name"
+case "$name" in
+    basic_*) ;;
+    *) fail "wrongly named resource" ;;
+esac
 
 client ticket-check "$id" >/dev/null
 

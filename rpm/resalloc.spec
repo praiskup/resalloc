@@ -44,7 +44,7 @@
 Name:       %srcname
 Summary:    Resource allocator - Client
 Version:    0%{?postrel}
-Release:    10%{?dist}
+Release:    11%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -208,6 +208,9 @@ ln -sf "%{default_sitelib}/%{name}server" /home/$user/project
 
 
 %changelog
+* Wed Jan 17 2018 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-11
+- log both stdout and stderr for start/stop/livecheck commands
+
 * Sat Jan 06 2018 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-10
 - service: add WantedBy=multi-user.target
 

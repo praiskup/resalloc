@@ -32,7 +32,8 @@ from sqlalchemy import or_
 
 log = get_logger(__name__)
 
-def run_command(res_id, res_name, command, ltype='alloc'):
+def run_command(res_id, res_name, command, ltype='alloc',
+                catch_stdout_bytes=None):
     log.debug("running: " + command)
     pfx = 'RESALLOC_'
     env = os.environ
@@ -48,15 +49,55 @@ def run_command(res_id, res_name, command, ltype='alloc'):
 
     lfile = os.path.join(ldir, '{0:06d}_{1}'.format(res_id, ltype))
     with open(lfile, 'a+b') as logfile:
-        logfile.write(b'--------begin--------\n')
-        logfile.write(b'-----std.err-----\n')
-        rv = subprocess.check_output(command, env=env, shell=True,
-                                     stderr=logfile)
-        logfile.write(b'\n-----std.out-----\n')
-        logfile.write(rv)
-        logfile.write(b'\n---------end---------\n')
 
-    return rv
+        if not catch_stdout_bytes:
+            return {'status': subprocess.call(command, env=env, shell=True,
+                                              stdout=logfile, stderr=logfile)}
+
+        stdout_written = 0
+        stdout_stopped = False
+
+        # The 'log' captures both stdout and stderr, and to not have huge
+        # time de-sync, we want both streams to go through PIPE.  That's
+        # what the 'cat' is here for.
+        cat = subprocess.Popen(['cat'], stdin=subprocess.PIPE,
+                               stdout=logfile, stderr=logfile)
+
+
+        # Run the sub-command to be captured.
+        sp = subprocess.Popen(command, env=env, shell=True,
+                              stdout=subprocess.PIPE, stderr=cat.stdin)
+
+        captured_string = b""
+
+
+        for line in iter(sp.stdout.readline, b''):
+            log.debug("=> here <=")
+            # Write to the log.
+            cat.stdin.write(line)
+            cat.stdin.flush()
+
+            if stdout_stopped:
+                continue
+
+            if stdout_written + len(line) > catch_stdout_bytes:
+                if stdout_written == 0:
+                    # If nothing was written, write at least part of the stdout
+                    line = line[:catch_stdout_bytes]
+                    captured_string += line
+
+                stdout_stopped = True
+                captured_string += "<< trimmed >>\n"
+                continue
+
+            stdout_written += len(line)
+            captured_string += line
+
+
+    return {
+        'status': sp.wait(),
+        'stdout': captured_string,
+    }
 
 
 def reload_config():
@@ -139,22 +180,16 @@ class AllocWorker(Worker):
             session.expunge(resource)
 
         # Run the allocation script.
-        retval = 0
-        output = ''
-        try:
-            output = run_command(
-                resource.id,
-                resource.name,
-                self.pool.cmd_new
-            )
-        except subprocess.CalledProcessError as e:
-            output = e.output
-            retval = e.returncode
+        output = run_command(
+            resource.id,
+            resource.name,
+            self.pool.cmd_new,
+            catch_stdout_bytes=512,
+        )
 
         with session_scope() as session:
-            resource.state = RState.ENDED if retval else RState.UP
-            # TODO: limit for output size?
-            resource.data = output
+            resource.state = RState.ENDED if output['status'] else RState.UP
+            resource.data = output['stdout']
             tags = []
             if type(self.pool.tags) != type([]):
                 msg = "Pool {pool} has set 'tags' set, but that's not an array"\
@@ -200,20 +235,16 @@ class Watcher(threading.Thread):
                 continue
 
             failed_count = 0
-            rc = 0
-            try:
-                run_command(
+            rc = run_command(
                     res_id,
                     data['name'],
                     pool.cmd_livecheck,
                     'watch')
-            except subprocess.CalledProcessError as e:
-                rc = e.returncode
 
             with session_scope() as session:
                 res = session.query(models.Resource).get(res_id)
                 res.check_last_time = time.time()
-                if rc:
+                if rc['status']:
                     res.check_failed_count = res.check_failed_count + 1
                     log.debug("failed check #{0} for {1}"\
                             .format(res.check_failed_count, res_id))

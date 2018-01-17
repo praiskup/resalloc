@@ -27,7 +27,7 @@
 ##      # resource is considered to be working.
 ##      cmd_livecheck: "/bin/check-vm"
 ##
-##      # Check each 300 seconds whether the VM responds.
+##      # The minimum delay between two livechecks is 300s (not more often).
 ##      livecheck_period: 300
 ##
 ##      # Delete the resource (and sub-resources, if any).

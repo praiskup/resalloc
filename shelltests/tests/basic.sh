@@ -46,8 +46,10 @@ cat > etc/pools.yaml <<EOF
 basic:
     max: $MAX
     max_prealloc: $PREALLOC
-    cmd_new: "echo \$RESALLOC_NAME"
-    cmd_delete: "true"
+    cmd_new: "echo >&2 before; echo \$RESALLOC_NAME; echo >&2 after"
+    cmd_delete: "echo >&2 stderr; echo stdout"
+    cmd_livecheck: "echo >&2 stderr; echo stdout"
+    livecheck_period: 1
     tags:
         - A
         - B
@@ -176,11 +178,29 @@ sleep 5
 up=$(maint resource-list --up | wc -l)
 test "$up" -eq "$PREALLOC"
 
+check_id=$(printf "%06d" 1)
+info "check that all the log files are in place"
+test -f "$WORKDIR"/hooks/"$check_id"_alloc
+test -f "$WORKDIR"/hooks/"$check_id"_terminate
+test -f "$WORKDIR"/hooks/"$check_id"_watch
+
+info "check that log files contain both stderr and stdout"
+grep -q before "$WORKDIR"/hooks/"$check_id"_alloc
+grep -q after  "$WORKDIR"/hooks/"$check_id"_alloc
+grep -q stdout "$WORKDIR"/hooks/"$check_id"_terminate
+grep -q stderr "$WORKDIR"/hooks/"$check_id"_terminate
+grep -q stdout "$WORKDIR"/hooks/"$check_id"_watch
+grep -q stderr "$WORKDIR"/hooks/"$check_id"_watch
+
 info "test force-delete of two resources"
 maint resource-delete 20 21
 # hack: enforce manager's loop
 client ticket --tag A >/dev/null
-sleep 3
+
+info "check that multiple checks are logged into single log file"
+sleep 15
+test "2" -le "$(grep stderr "$WORKDIR"/hooks/000017_watch | wc -l)"
+test "2" -le "$(grep stdout "$WORKDIR"/hooks/000017_watch | wc -l)"
 
 list=$(maint resource-list)
 test $(echo "$list" | wc -l) -eq $(( PREALLOC + 1 ))

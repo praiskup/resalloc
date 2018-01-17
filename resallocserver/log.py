@@ -20,6 +20,8 @@ import logging
 from resallocserver.config import CONFIG
 
 def get_logger(loggername):
+    if 'BUILD_MANPAGES_RUNNING' in os.environ:
+        return None
     log = logging.getLogger(loggername)
     loglevel = logging.getLevelName(CONFIG['loglevel'].upper())
     logfile = os.path.join(CONFIG['logdir'], 'main.log')

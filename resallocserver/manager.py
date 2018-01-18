@@ -408,11 +408,10 @@ class Manager(object):
                     res_tags = resource.tag_set
                     if ticket_tags.issubset(res_tags):
                         # We have found appropriate resource!
-                        ticket.resource = resource
+                        ticket.resource_id = resource.id
                         if ticket.tid:
                             notify_ticket = ticket.tid
-                        session.add_all([resource, ticket])
-                        session.flush()
+                        session.add_all([ticket])
                         break
             if notify_ticket:
                 self._notify_waiting(notify_ticket)

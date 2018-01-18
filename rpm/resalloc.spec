@@ -1,5 +1,4 @@
 %global srcname resalloc
-%global postrel .dev0
 
 %global sysuser  resalloc
 %global sysgroup %sysuser
@@ -43,8 +42,8 @@
 
 Name:       %srcname
 Summary:    Resource allocator - Client
-Version:    0%{?postrel}
-Release:    12%{?dist}
+Version:    1.0
+Release:    1%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -208,6 +207,9 @@ ln -sf "%{default_sitelib}/%{name}server" /home/$user/project
 
 
 %changelog
+* Thu Jan 18 2018 Pavel Raiskup <praiskup@redhat.com> - 0.1-12
+- first release
+
 * Wed Jan 17 2018 Pavel Raiskup <praiskup@redhat.com> - 0.dev0-12
 - better setup default directories
 

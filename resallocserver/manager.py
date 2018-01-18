@@ -57,25 +57,17 @@ def run_command(res_id, res_name, command, ltype='alloc',
         stdout_written = 0
         stdout_stopped = False
 
-        # The 'log' captures both stdout and stderr, and to not have huge
-        # time de-sync, we want both streams to go through PIPE.  That's
-        # what the 'cat' is here for.
-        cat = subprocess.Popen(['cat'], stdin=subprocess.PIPE,
-                               stdout=logfile, stderr=logfile)
-
-
         # Run the sub-command to be captured.
         sp = subprocess.Popen(command, env=env, shell=True,
-                              stdout=subprocess.PIPE, stderr=cat.stdin)
+                              stdout=subprocess.PIPE, stderr=logfile)
 
         captured_string = b""
 
 
         for line in iter(sp.stdout.readline, b''):
-            log.debug("=> here <=")
             # Write to the log.
-            cat.stdin.write(line)
-            cat.stdin.flush()
+            logfile.write(line)
+            logfile.flush()
 
             if stdout_stopped:
                 continue

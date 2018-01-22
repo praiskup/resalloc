@@ -4,3 +4,4 @@ include requirements.txt
 recursive-include resalloc *.py
 recursive-include shelltests *.sh testrunner testlib
 recursive-include test-tooling resalloc* wrap
+recursive-include build_manpages/build_manpages *.py

@@ -42,8 +42,8 @@
 
 Name:       %srcname
 Summary:    Resource allocator - Client
-Version:    1.0
-Release:    1%{?dist}
+Version:    1.1
+Release:    0%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -207,6 +207,9 @@ ln -sf "%{default_sitelib}/%{name}server" /home/$user/project
 
 
 %changelog
+* Tue Jan 30 2018 Pavel Raiskup <praiskup@redhat.com> - 1.1-0
+- release with removed 'cat' hack (commit 970b99725acf1dc)
+
 * Thu Jan 18 2018 Pavel Raiskup <praiskup@redhat.com> - 0.1-12
 - first release
 

@@ -1,1 +1,1 @@
-resalloc_version = '1.0'
+resalloc_version = '1.1'

@@ -17,7 +17,7 @@
 
 import os, sys
 from setuptools import setup, find_packages
-from resalloc.version import resalloc_version
+from resalloc import __version__
 from os import listdir, path
 
 # For the manual pages generator.
@@ -47,7 +47,7 @@ Resource allocator
 
 setup(
     name=project,
-    version=resalloc_version,
+    version=__version__,
     description='Client/server application for maintaining (expensive) resources',
     long_description=long_description,
     author='Pavel Raiskup',

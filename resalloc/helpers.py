@@ -88,7 +88,7 @@ def load_config_file(path):
         return {}
 
     with open(path, 'r') as fd:
-        config = yaml.load(fd)
+        config = yaml.safe_load(fd)
         if not config:
             config = {}
         if not type(config) == dict:

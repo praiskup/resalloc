@@ -28,7 +28,6 @@ from resallocserver.db import session_scope
 from resallocserver.log import get_logger
 from resallocserver.logic import QResources, QTickets
 from resallocserver.config import CONFIG_DIR, CONFIG
-from sqlalchemy import or_
 
 log = get_logger(__name__)
 

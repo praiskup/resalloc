@@ -16,7 +16,6 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
-import yaml
 from resalloc.helpers import merge_dict, load_config_file
 
 config_dir = "/etc/resallocserver"

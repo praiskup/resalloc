@@ -32,13 +32,14 @@ from sqlalchemy import or_
 
 log = get_logger(__name__)
 
-def run_command(res_id, res_name, command, ltype='alloc',
+def run_command(pool_id, res_id, res_name, command, ltype='alloc',
                 catch_stdout_bytes=None):
     log.debug("running: " + command)
     pfx = 'RESALLOC_'
     env = os.environ
     env[pfx + 'ID']   = str(res_id)
     env[pfx + 'NAME'] = str(res_name)
+    env[pfx + 'POOL_ID'] = str(pool_id)
 
     ldir = os.path.join(CONFIG['logdir'], 'hooks')
     try:
@@ -147,6 +148,7 @@ class TerminateWorker(Worker):
             return
 
         run_command(
+                self.pool.id,
                 resource.id,
                 resource.name,
                 self.pool.cmd_delete,
@@ -173,6 +175,7 @@ class AllocWorker(Worker):
 
         # Run the allocation script.
         output = run_command(
+            self.pool.id,
             resource.id,
             resource.name,
             self.pool.cmd_new,
@@ -228,6 +231,7 @@ class Watcher(threading.Thread):
 
             failed_count = 0
             rc = run_command(
+                    pool.id,
                     res_id,
                     data['name'],
                     pool.cmd_livecheck,
@@ -272,8 +276,10 @@ class Pool(object):
     tags = None
     name_pattern = "{pool_name}_{id}_{datetime}"
 
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, id):
+        self.id = id
+        # TODO: drop this
+        self.name = id
 
 
     def validate(self):

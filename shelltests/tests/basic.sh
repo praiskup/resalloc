@@ -46,7 +46,7 @@ cat > etc/pools.yaml <<EOF
 basic:
     max: $MAX
     max_prealloc: $PREALLOC
-    cmd_new: "echo >&2 before; echo \$RESALLOC_NAME; echo >&2 after"
+    cmd_new: "echo >&2 before; env | grep RESALLOC_; echo >&2 after"
     cmd_delete: "echo >&2 stderr; echo stdout"
     cmd_livecheck: "echo >&2 stderr; echo stdout"
     livecheck_period: 1
@@ -161,11 +161,19 @@ waiting_pid=$!
 sleep 5
 ! kill $waiting_pid &>/dev/null
 
-name=$(client ticket-wait "$id")
-case "$name" in
-    basic_*) ;;
-    *) fail "wrongly named resource" ;;
-esac
+alloc_output=$(client ticket-wait "$id")
+while read -r line; do
+    case $line in
+        before|after) ;;
+        RESALLOC_ID=*) ;;
+        RESALLOC_NAME=basic_*) ;;
+        RESALLOC_POOL_ID=basic) ;;
+        RESALLOC_ID_IN_POOL=*) ;;
+        *) fail "invalid data in output: $line"
+    esac
+done <<<"$alloc_output"
+lines=$(echo "$alloc_output" | grep ^RESALLOC | wc -l)
+test $lines -eq 4 || fail "invalid RESALLOC_ variables"
 
 client ticket-check "$id" >/dev/null
 
@@ -207,5 +215,39 @@ test $(echo "$list" | wc -l) -eq $(( PREALLOC + 1 ))
 
 ! echo "$list" | grep ^20
 ! echo "$list" | grep ^21
+
+info "check that RESALLOC_ID_IN_POOL has sane numbers"
+number_of_tickets=40
+tickets=
+for n in `seq $number_of_tickets`; do
+    tickets+=' '$(client ticket --tag A)
+done
+
+while true; do
+    tickets=$(maint ticket-list)
+    test -z "$tickets" && break # processed
+    while read -r line; do
+        case $line in
+        *resource=*)
+            # has resource already
+            eval 'set -- $line'
+            ticket=$1
+            output=$(client ticket-check "$ticket")
+            while read -r output_line; do
+                case $output_line in
+                RESALLOC_ID_IN_POOL=*)
+                    old_IFS=$IFS
+                    IFS='='
+                    eval 'set -- $output_line'
+                    IFS=$old_IFS
+                    test "$2" -le "$MAX" || fail "unexpected RESALLOC_ID_IN_POOL value $2"
+                    ;;
+                esac
+            done <<<"$output"
+            client ticket-close "$ticket"
+            ;;
+        esac
+    done <<<"$tickets"
+done
 
 # vi: ft=sh

@@ -16,7 +16,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import time
-from sqlalchemy import Column, DateTime, String, Integer, Float, ForeignKey, func, LargeBinary
+from sqlalchemy import (Column, DateTime, String, Integer, Float, ForeignKey,
+        func, LargeBinary, UniqueConstraint)
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -57,6 +58,24 @@ class Resource(Base, TagMixin):
     state = Column(String, nullable=False, default=RState.STARTING)
     check_last_time = Column(Float, default=time.time())
     check_failed_count = Column(Integer, default=0)
+
+    @property
+    def id_in_pool(self):
+        if self.id_in_pool_object:
+            return self.id_in_pool_object.id
+        return None
+
+class IDWithinPool(Base):
+    __tablename__ = 'ids_within_pool'
+    __table_args__ = (
+        UniqueConstraint('id', 'pool_name'),
+    )
+
+    resource_id = Column(Integer, ForeignKey('resources.id'), primary_key=True)
+    pool_name = Column(String, ForeignKey('pools.name'))
+    id = Column(Integer)
+
+    resource = relationship('Resource', backref=backref('id_in_pool_object', uselist=False))
 
 
 class ResourceTag(Base):

@@ -31,7 +31,7 @@ from resallocserver.config import CONFIG_DIR, CONFIG
 
 log = get_logger(__name__)
 
-def run_command(pool_id, res_id, res_name, command, ltype='alloc',
+def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
                 catch_stdout_bytes=None):
     log.debug("running: " + command)
     pfx = 'RESALLOC_'
@@ -39,6 +39,7 @@ def run_command(pool_id, res_id, res_name, command, ltype='alloc',
     env[pfx + 'ID']   = str(res_id)
     env[pfx + 'NAME'] = str(res_name)
     env[pfx + 'POOL_ID'] = str(pool_id)
+    env[pfx + 'ID_IN_POOL'] = str(id_in_pool)
 
     ldir = os.path.join(CONFIG['logdir'], 'hooks')
     try:
@@ -125,9 +126,12 @@ class TerminateWorker(Worker):
             resource = session.query(models.Resource).get(self.resource_id)
             resource.state = RState.ENDED
             session.add(resource)
+            if resource.id_in_pool_object:
+                session.delete(resource.id_in_pool_object)
             self.event.set()
 
     def job(self):
+        id_in_pool = None
         with session_scope() as session:
             resource = session.query(models.Resource).get(self.resource_id)
             if resource.ticket:
@@ -138,6 +142,7 @@ class TerminateWorker(Worker):
             resource.state = RState.DELETING
             session.add(resource)
             session.flush()
+            id_in_pool = resource.id_in_pool
             session.expunge(resource)
 
         self.log.debug("TerminateWorker(pool={0}): name={1} by: \"{2}\""\
@@ -150,6 +155,7 @@ class TerminateWorker(Worker):
                 self.pool.id,
                 resource.id,
                 resource.name,
+                id_in_pool,
                 self.pool.cmd_delete,
                 'terminate',
         )
@@ -168,8 +174,10 @@ class AllocWorker(Worker):
                 )
         )
 
+        id_in_pool = None
         with session_scope() as session:
             resource = session.query(models.Resource).get(self.resource_id)
+            id_in_pool = resource.id_in_pool
             session.expunge(resource)
 
         # Run the allocation script.
@@ -177,12 +185,20 @@ class AllocWorker(Worker):
             self.pool.id,
             resource.id,
             resource.name,
+            id_in_pool,
             self.pool.cmd_new,
             catch_stdout_bytes=512,
         )
 
         with session_scope() as session:
-            resource.state = RState.ENDED if output['status'] else RState.UP
+            resource = session.query(models.Resource).get(resource.id)
+
+            if output['status']:
+                resource.state = RState.ENDED
+                session.delete(resource.id_in_pool_object)
+            else:
+                resource.state = RState.UP
+
             resource.data = output['stdout']
             tags = []
             if type(self.pool.tags) != type([]):
@@ -198,6 +214,7 @@ class AllocWorker(Worker):
 
             log.debug("Allocator ends with state={0}".format(resource.state))
             session.add_all(tags + [resource])
+
 
         # Notify manager that it is worth doing re-spin.
         self.event.set()
@@ -218,6 +235,7 @@ class Watcher(threading.Thread):
                     'pool': item.pool,
                     'last': item.check_last_time,
                     'fail': item.check_failed_count,
+                    'id_in_pool': item.id_in_pool,
                 }
 
         for res_id, data in to_check.items():
@@ -233,6 +251,7 @@ class Watcher(threading.Thread):
                     pool.id,
                     res_id,
                     data['name'],
+                    data['id_in_pool'],
                     pool.cmd_livecheck,
                     'watch')
 
@@ -285,6 +304,30 @@ class Pool(object):
         assert(self.cmd_new)
         assert(self.cmd_delete)
 
+
+    def _allocate_pool_id(self, session, resource):
+        # allocate the lowest available pool_id
+        ids_query = (
+                session.query(models.IDWithinPool)
+                       .filter_by(pool_name=self.name)
+                       .order_by(models.IDWithinPool.id)
+        )
+        ids = {x.id: True for x in ids_query.all()}
+
+        found_id = None
+        try_id = 0
+        while True:
+            if try_id in ids:
+                try_id += 1
+                continue
+
+            found_id = models.IDWithinPool()
+            found_id.id = try_id
+            found_id.pool_name = self.name
+            found_id.resource_id = resource.id
+            return found_id
+
+
     def allocate(self, event):
         resource_id = None
         with session_scope() as session:
@@ -294,6 +337,12 @@ class Pool(object):
             resource.pool = self.name
             session.add_all([resource, dbinfo])
             session.flush()
+
+            pool_id = self._allocate_pool_id(session, resource)
+            session.add(pool_id)
+            session.flush()
+            log.debug("id in pool: {0}".format(pool_id.id))
+
             resource_id = resource.id
             fill_dict = dict(
                 id=str(resource_id).zfill(8),

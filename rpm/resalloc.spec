@@ -42,7 +42,7 @@
 
 Name:       %srcname
 Summary:    Resource allocator - Client
-Version:    1.1
+Version:    1.1.dev1
 Release:    1%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc

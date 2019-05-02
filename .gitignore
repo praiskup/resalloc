@@ -2,6 +2,8 @@ __pycache__
 *.py[oc]
 *egg*
 
+tags # ctags
+
 # The setup.py leftovers.
 build
 dist

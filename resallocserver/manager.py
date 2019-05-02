@@ -191,14 +191,7 @@ class AllocWorker(Worker):
         )
 
         with session_scope() as session:
-            resource = session.query(models.Resource).get(resource.id)
-
-            if output['status']:
-                resource.state = RState.ENDED
-                session.delete(resource.id_in_pool_object)
-            else:
-                resource.state = RState.UP
-
+            resource.state = RState.ENDED if output['status'] else RState.UP
             resource.data = output['stdout']
             tags = []
             if type(self.pool.tags) != type([]):
@@ -214,6 +207,9 @@ class AllocWorker(Worker):
 
             log.debug("Allocator ends with state={0}".format(resource.state))
             session.add_all(tags + [resource])
+
+            if resource.state == RState.ENDED:
+                session.delete(resource.id_in_pool_object)
 
 
         # Notify manager that it is worth doing re-spin.

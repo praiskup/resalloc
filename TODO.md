@@ -1,8 +1,11 @@
+- [ ] guarantee that new/delete logs don't waste a whole disk
 - [ ] documentation
-- [ ] store new/delete logs
+- [x] store new/delete logs
 - [x] - README
-- [ ] travis CI
-- [ ]   testsuite
+- [x] travis CI
+- [x]   testsuite
+- [ ] mock-ed testsuite and coverage
+- [ ] test the periodic check cmd
 - [ ] user support (authentication?)
 - [ ] completely "detached" allocator/terminator
 - [ ] track pools completely in database (and bound it with 1:N relation with

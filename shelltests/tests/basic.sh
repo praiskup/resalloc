@@ -184,7 +184,10 @@ done
 sleep 5
 
 up=$(maint resource-list --up | wc -l)
-test "$up" -eq "$PREALLOC"
+test "$up" -eq "$PREALLOC" || {
+    echo >&2 "$up"
+    fail "unexpected number of running resources"
+}
 
 check_id=$(printf "%06d" 1)
 info "check that all the log files are in place"

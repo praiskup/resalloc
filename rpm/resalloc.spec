@@ -6,44 +6,21 @@
 
 %bcond_without check
 
-# Huh, ugly hacks.
-%global python2_alembic    python-alembic
-%global python2_sqlalchemy python-sqlalchemy
-%if 0%{?fedora} >= 26
-%global python2_sqlalchemy python2-sqlalchemy
-%endif
 %if 0%{?fedora} || 0%{?rhel} > 7
-%global build_python2 1
-%global build_python3 1
-%bcond_without python2
+%bcond_with    python2
 %bcond_without python3
-%global default_python python3
-%global default_python3 true
-%global default_sitelib %python3_sitelib
-%global default_drop_sitelib %python2_sitelib
-%global python2 python2
 %else
-%global build_python2 1
 %bcond_without python2
-%bcond_with python3
-%global default_python python2
-%global default_python2 true
-%global default_sitelib %python2_sitelib
-%global default_drop_sitelib %python3_sitelib
-%global python2 python
+%bcond_with    python3
 %endif
 
-%global server2_both_requires %python2_alembic %python2-six %python2_sqlalchemy %python2-yaml
-%global server3_both_requires  python3-alembic  python3-six  python3-sqlalchemy  python3-yaml
-
-%{?default_python2:%global server_both_requires %server2_both_requires}
-%{?default_python3:%global server_both_requires %server3_both_requires}
-
+%global default_python  %{?with_python3:python3}%{!?with_python3:python2}
+%global default_sitelib %{?with_python3:%python3_sitelib}%{!?with_python3:%python_sitelib}
 
 Name:       %srcname
 Summary:    Resource allocator - Client
 Version:    2.1
-Release:    1%{?dist}
+Release:    2%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -52,17 +29,24 @@ BuildRequires: postgresql-server
 
 
 %if %{with python3}
-BuildRequires: python3-setuptools
+BuildRequires: python3-alembic
 BuildRequires: python3-devel
-BuildRequires: %server3_both_requires python3-psycopg2
+BuildRequires: python3-psycopg2
+BuildRequires: python3-setuptools
+BuildRequires: python3-six
+BuildRequires: python3-sqlalchemy
+BuildRequires: python3-yaml
 %endif
 
 %if %{with python2}
-BuildRequires: python2-setuptools
+BuildRequires: python-alembic
 BuildRequires: python2-devel
-BuildRequires: %server2_both_requires %python2-psycopg2
+BuildRequires: python-psycopg2
+BuildRequires: python2-setuptools
+BuildRequires: python2-six
+BuildRequires: python-sqlalchemy
+BuildRequires: python-yaml
 %endif
-
 
 Requires:   %default_python-%srcname = %version-%release
 
@@ -72,10 +56,22 @@ Source1:    resalloc.service
 %description
 Client/Server application for managing of (expensive) resources.
 
+
 %package server
 Summary:    Resource Allocator - Server
 Requires:   %default_python-%srcname = %version-%release
-Requires:   %server_both_requires
+%if %{with python3}
+Requires: python3-alembic
+Requires: python3-six
+Requires: python3-sqlalchemy
+Requires: python3-yaml
+%else
+Requires: python-alembic
+Requires: python2-six
+Requires: python-sqlalchemy
+Requires: python-yaml
+%endif
+
 Requires(pre): /usr/sbin/useradd /usr/sbin/mkhomedir_helper
 %description server
 Server side
@@ -106,8 +102,7 @@ Libraries.
 %build
 %if %{with python2}
 %py2_build
-%endif
-%if %{with python3}
+%else
 %py3_build
 %endif
 
@@ -115,14 +110,9 @@ Libraries.
 %install
 %if %{with python2}
 %py2_install
-%endif
-%if %{with python3}
+%else
 %py3_install
 %endif
-
-for sitelib in %default_drop_sitelib; do
-    /bin/rm -rf %buildroot$sitelib/%{name}server
-done
 
 mkdir -p %buildroot%_unitdir
 mkdir -p %buildroot%_logdir
@@ -132,15 +122,11 @@ install -p -m 644 %SOURCE1 %buildroot%_unitdir
 
 %if %{with check}
 %check
-set --
 %if %{with python2}
-set -- "$@" python2
+make check TEST_PYTHONS="python2"
+%else
+make check TEST_PYTHONS="python3"
 %endif
-%if %{with python3}
-set -- "$@" python3
-%endif %{with python3}
-
-make check TEST_PYTHONS="$*"
 %endif
 
 
@@ -207,6 +193,9 @@ ln -sf "%{default_sitelib}/%{name}server" /home/$user/project
 
 
 %changelog
+* Tue May 07 2019 Pavel Raiskup <praiskup@redhat.com> - 2.1-2
+- only support Python 3 or Python 2
+
 * Tue May 07 2019 Pavel Raiskup <praiskup@redhat.com> - 2.1-1
 - fixed racy testsuite
 

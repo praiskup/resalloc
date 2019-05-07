@@ -179,15 +179,16 @@ client ticket-check "$id" >/dev/null
 
 info "close all the tickets now and check that again $PREALLOC is up"
 for i in $(seq 2 $(( MAX + 1 ))); do
-    client ticket-close "$i"
+    client ticket-close "$i" || error "can't close ticket"
 done
-sleep 5
 
-up=$(maint resource-list --up | wc -l)
-test "$up" -eq "$PREALLOC" || {
-    echo >&2 "$up"
-    fail "unexpected number of running resources"
-}
+success=false
+for _ in $(seq 30); do
+    up=$(maint resource-list --up | wc -l)
+    test "$up" -eq "$PREALLOC" && success=true
+    sleep 1
+done
+$success || die "unexpected number of resources after 30s: $up"
 
 check_id=$(printf "%06d" 1)
 info "check that all the log files are in place"

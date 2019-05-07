@@ -4,6 +4,13 @@
 %global sysgroup %sysuser
 %global _logdir  %_var/log/%{name}server
 
+%global sum Resource allocator for expensive resources
+%global desc \
+The resalloc project aims to help with taking care of dynamically \
+allocated resources, for example ephemeral virtual machines used for \
+the purposes of CI/CD tasks.
+
+
 %bcond_without check
 
 %if 0%{?fedora} || 0%{?rhel} > 7
@@ -18,9 +25,9 @@
 %global default_sitelib %{?with_python3:%python3_sitelib}%{!?with_python3:%python_sitelib}
 
 Name:       %srcname
-Summary:    Resource allocator - Client
+Summary:    %sum - client tooling
 Version:    2.1
-Release:    2%{?dist}
+Release:    3%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -54,11 +61,13 @@ Source0:    https://github.com/praiskup/%{name}/archive/v%{version}/%{name}-%{ve
 Source1:    resalloc.service
 
 %description
-Client/Server application for managing of (expensive) resources.
+%desc
+
+The %name package provides the client-side tooling.
 
 
 %package server
-Summary:    Resource Allocator - Server
+Summary:    %sum - server part
 Requires:   %default_python-%srcname = %version-%release
 %if %{with python3}
 Requires: python3-alembic
@@ -74,24 +83,33 @@ Requires: python-yaml
 
 Requires(pre): /usr/sbin/useradd /usr/sbin/mkhomedir_helper
 %description server
-Server side
+%desc
+
+The %name-server package provides the resalloc server, and
+some tooling for resalloc administrators.
 
 
 %if %{with python3}
 %package -n python3-%srcname
-Summary:    Resource Allocator - Library
+Summary: %sum - Python 3 client library
 %{?python_provide:%python_provide python3-%srcname}
 %description -n python3-%srcname
-Libraries.
+%desc
+
+The python3-%name package provides Python 3 client library for talking
+to the resalloc server.
 %endif
 
 
 %if %{with python2}
 %package -n python2-%srcname
-Summary:    Resource Allocator - Library
+Summary: %sum - Python 2 client library
 %{?python_provide:%python_provide python2-%srcname}
 %description -n python2-%srcname
-Libraries.
+%desc
+
+The python2-%name package provides Python 2 client library for talking
+to the resalloc server.
 %endif
 
 
@@ -193,6 +211,9 @@ ln -sf "%{default_sitelib}/%{name}server" /home/$user/project
 
 
 %changelog
+* Tue May 07 2019 Pavel Raiskup <praiskup@redhat.com> - 2.1-3
+- provide summary/description (per msuchy's review)
+
 * Tue May 07 2019 Pavel Raiskup <praiskup@redhat.com> - 2.1-2
 - only support Python 3 or Python 2
 

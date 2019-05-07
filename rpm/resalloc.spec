@@ -42,7 +42,7 @@
 
 Name:       %srcname
 Summary:    Resource allocator - Client
-Version:    1.1.dev1
+Version:    2.0
 Release:    1%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
@@ -207,6 +207,9 @@ ln -sf "%{default_sitelib}/%{name}server" /home/$user/project
 
 
 %changelog
+* Tue May 07 2019 Pavel Raiskup <praiskup@redhat.com> - 2.0-1
+- release 2.0 (changed db schema for "id" within pool)
+
 * Wed Oct 31 2018 Pavel Raiskup <praiskup@redhat.com> - 1.1-1
 - bump, rebuild for Python 3.7
 

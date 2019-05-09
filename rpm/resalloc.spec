@@ -57,7 +57,7 @@ BuildRequires: python-yaml
 
 Requires:   %default_python-%srcname = %version-%release
 
-Source0:    https://github.com/praiskup/%{name}/archive/v%{version}/%{name}-%{version}.tar.gz
+Source0:    https://github.com/praiskup/%name/releases/download/v%version/%name-%version.tar.gz
 Source1:    resalloc.service
 
 %description

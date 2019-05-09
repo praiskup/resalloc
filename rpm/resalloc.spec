@@ -26,8 +26,8 @@ the purposes of CI/CD tasks.
 
 Name:       %srcname
 Summary:    %sum - client tooling
-Version:    2.1
-Release:    3%{?dist}
+Version:    2.2
+Release:    1%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -211,6 +211,9 @@ ln -sf "%{default_sitelib}/%{name}server" /home/$user/project
 
 
 %changelog
+* Thu May 09 2019 Pavel Raiskup <praiskup@redhat.com> - 2.2-1
+- new release
+
 * Tue May 07 2019 Pavel Raiskup <praiskup@redhat.com> - 2.1-3
 - provide summary/description (per msuchy's review)
 

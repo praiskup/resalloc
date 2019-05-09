@@ -3,6 +3,7 @@
 %global sysuser  resalloc
 %global sysgroup %sysuser
 %global _logdir  %_var/log/%{name}server
+%global _homedir %_sharedstatedir/%{name}server
 
 %global sum Resource allocator for expensive resources
 %global desc \
@@ -27,7 +28,7 @@ the purposes of CI/CD tasks.
 Name:       %srcname
 Summary:    %sum - client tooling
 Version:    2.2
-Release:    1%{?dist}
+Release:    2%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -134,8 +135,8 @@ to the resalloc server.
 
 mkdir -p %buildroot%_unitdir
 mkdir -p %buildroot%_logdir
-mkdir -p %buildroot%_sharedstatedir/%{name}server
 install -p -m 644 %SOURCE1 %buildroot%_unitdir
+install -d -m 700 %buildroot%_homedir
 
 
 %if %{with check}
@@ -148,20 +149,18 @@ make check TEST_PYTHONS="python3"
 %endif
 
 
+# Simplify "alembic upgrade head" actions.
+ln -s "%{default_sitelib}/%{name}server" %buildroot%_homedir/project
+
+
 %pre server
 user=%sysuser
 group=%sysgroup
 getent group "$user" >/dev/null || groupadd -r "$group"
 getent passwd "$user" >/dev/null || \
 useradd -r -g "$group" -G "$group" -s /bin/bash \
-        -c "resalloc server's user" "$user"
-
-# Meh, we often run ansible scripts by cmd_new etc., and ansible needs
-# write-able home directory (local_tmp/remote_tmp ansible settings is buggy).
-usermod -d "/home/$user" "$user"
-mkhomedir_helper "$user" 0007 || :
-# Simplify "alembic upgrade head" actions.
-ln -sf "%{default_sitelib}/%{name}server" /home/$user/project
+        -c "resalloc server's user" "$user" \
+        -d "%_homedir"
 
 
 %post server
@@ -207,10 +206,13 @@ ln -sf "%{default_sitelib}/%{name}server" /home/$user/project
 %_unitdir/resalloc.service
 %attr(0700, %sysuser, %sysgroup) %dir %_logdir
 %_mandir/man1/%{name}-maint.1*
-%attr(0700, %sysuser, %sysgroup) %_sharedstatedir/%{name}server
+%attr(0700, %sysuser, %sysgroup) %_homedir
 
 
 %changelog
+* Fri May 10 2019 Pavel Raiskup <praiskup@redhat.com> - 2.2-2
+- move homedir from /home to /var/lib (per msuchy's review)
+
 * Thu May 09 2019 Pavel Raiskup <praiskup@redhat.com> - 2.2-1
 - new release
 

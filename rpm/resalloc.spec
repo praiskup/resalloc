@@ -28,7 +28,7 @@ the purposes of CI/CD tasks.
 Name:       %srcname
 Summary:    %sum - client tooling
 Version:    2.2
-Release:    2%{?dist}
+Release:    3%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -60,6 +60,7 @@ Requires:   %default_python-%srcname = %version-%release
 
 Source0:    https://github.com/praiskup/%name/releases/download/v%version/%name-%version.tar.gz
 Source1:    resalloc.service
+Source2:    logrotate
 
 %description
 %desc
@@ -69,6 +70,7 @@ The %name package provides the client-side tooling.
 
 %package server
 Summary:    %sum - server part
+Requires:   logrotate
 Requires:   %default_python-%srcname = %version-%release
 %if %{with python3}
 Requires: python3-alembic
@@ -137,6 +139,8 @@ mkdir -p %buildroot%_unitdir
 mkdir -p %buildroot%_logdir
 install -p -m 644 %SOURCE1 %buildroot%_unitdir
 install -d -m 700 %buildroot%_homedir
+install -d -m 700 %buildroot%_sysconfdir/logrotate.d
+install -p -m 644 %SOURCE2 %buildroot%_sysconfdir/logrotate.d/resalloc
 
 
 %if %{with check}
@@ -207,9 +211,13 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 %attr(0700, %sysuser, %sysgroup) %dir %_logdir
 %_mandir/man1/%{name}-maint.1*
 %attr(0700, %sysuser, %sysgroup) %_homedir
+%_sysconfdir/logrotate.d/resalloc
 
 
 %changelog
+* Fri May 10 2019 Pavel Raiskup <praiskup@redhat.com> - 2.2-3
+- logrotate config (per review rhbz#1707302)
+
 * Fri May 10 2019 Pavel Raiskup <praiskup@redhat.com> - 2.2-2
 - move homedir from /home to /var/lib (per msuchy's review)
 

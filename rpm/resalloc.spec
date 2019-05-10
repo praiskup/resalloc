@@ -229,6 +229,7 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 %changelog
 * Fri May 10 2019 Pavel Raiskup <praiskup@redhat.com> - 2.3-3
 - drop mkhomedir requires leftover
+- configure logrotate to compress rotated logs
 
 * Fri May 10 2019 Pavel Raiskup <praiskup@redhat.com> - 2.3-2
 - fix logrotate typo s/lib/log/, package it as config file

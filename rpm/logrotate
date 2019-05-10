@@ -1,3 +1,5 @@
+compress
+
 /var/log/resallocserver/main.log {
     missingok
     notifempty

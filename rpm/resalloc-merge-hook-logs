@@ -1,0 +1,17 @@
+#! /bin/sh
+
+export PATH=/usr/bin
+
+hooks_log=/var/log/resallocserver/hooks.log
+
+find /var/log/resallocserver/hooks -type f -mmin +60 \
+    | sort | \
+while read -r file; do
+    {
+        echo "=== $file ==="
+        cat "$file"
+        echo
+        echo
+    } >> "$hooks_log"
+    rm "$file"
+done

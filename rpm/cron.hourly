@@ -1,0 +1,3 @@
+#! /bin/sh
+
+runuser -c '/usr/libexec/resalloc-merge-hook-logs' - resalloc

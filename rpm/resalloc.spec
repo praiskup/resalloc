@@ -61,6 +61,8 @@ Requires:   %default_python-%srcname = %version-%release
 Source0:    https://github.com/praiskup/%name/releases/download/v%version/%name-%version.tar.gz
 Source1:    resalloc.service
 Source2:    logrotate
+Source3:    resalloc-merge-hook-logs
+Source4:    cron.hourly
 
 %description
 %desc
@@ -70,6 +72,8 @@ The %name package provides the client-side tooling.
 
 %package server
 Summary:    %sum - server part
+
+Requires:   crontabs
 Requires:   logrotate
 Requires:   %default_python-%srcname = %version-%release
 %if %{with python3}
@@ -142,6 +146,10 @@ install -d -m 700 %buildroot%_homedir
 install -d -m 700 %buildroot%_sysconfdir/logrotate.d
 install -p -m 644 %SOURCE2 %buildroot%_sysconfdir/logrotate.d/resalloc
 install -p -m 644 man/resalloc-server.1 %buildroot%_mandir/man1
+install -d -m 755 %buildroot/%_libexecdir
+install -p -m 755 %SOURCE3 %buildroot/%_libexecdir
+install -d %buildroot%_sysconfdir/cron.hourly
+install -p -m 755 %SOURCE4 %buildroot%_sysconfdir/cron.hourly/resalloc
 
 
 %if %{with check}
@@ -214,12 +222,15 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 %_mandir/man1/%{name}-server.1*
 %attr(0700, %sysuser, %sysgroup) %_homedir
 %_sysconfdir/logrotate.d/resalloc
+%_libexecdir/resalloc-merge-hook-logs
+%config %attr(0755, root, root) %{_sysconfdir}/cron.hourly/resalloc
 
 
 %changelog
 * Fri May 10 2019 Pavel Raiskup <praiskup@redhat.com> - 2.3-1
 - logrotate config (per review rhbz#1707302)
 - provide manual page for resalloc-server (per rhbz#1707302)
+- logrotate also the hooks directory
 
 * Fri May 10 2019 Pavel Raiskup <praiskup@redhat.com> - 2.2-2
 - move homedir from /home to /var/lib (per msuchy's review)

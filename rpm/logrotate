@@ -5,3 +5,9 @@
     weekly
     copytruncate
 }
+
+/var/lib/resallocserver/hooks.log {
+    missingok
+    rotate 7
+    daily
+}

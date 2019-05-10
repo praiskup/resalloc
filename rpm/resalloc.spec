@@ -61,7 +61,7 @@ Requires:   %default_python-%srcname = %version-%release
 Source0:    https://github.com/praiskup/%name/releases/download/v%version/%name-%version.tar.gz
 Source1:    resalloc.service
 Source2:    logrotate
-Source3:    resalloc-merge-hook-logs
+Source3:    merge-hook-logs
 Source4:    cron.hourly
 
 %description
@@ -147,7 +147,7 @@ install -d -m 700 %buildroot%_sysconfdir/logrotate.d
 install -p -m 644 %SOURCE2 %buildroot%_sysconfdir/logrotate.d/resalloc
 install -p -m 644 man/resalloc-server.1 %buildroot%_mandir/man1
 install -d -m 755 %buildroot/%_libexecdir
-install -p -m 755 %SOURCE3 %buildroot/%_libexecdir
+install -p -m 755 %SOURCE3 %buildroot/%_libexecdir/%name-merge-hook-logs
 install -d %buildroot%_sysconfdir/cron.hourly
 install -p -m 755 %SOURCE4 %buildroot%_sysconfdir/cron.hourly/resalloc
 

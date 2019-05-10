@@ -28,7 +28,7 @@ the purposes of CI/CD tasks.
 Name:       %srcname
 Summary:    %sum - client tooling
 Version:    2.3
-Release:    1%{?dist}
+Release:    2%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -221,12 +221,15 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 %_mandir/man1/%{name}-maint.1*
 %_mandir/man1/%{name}-server.1*
 %attr(0700, %sysuser, %sysgroup) %_homedir
-%_sysconfdir/logrotate.d/resalloc
+%config %_sysconfdir/logrotate.d/resalloc
 %_libexecdir/resalloc-merge-hook-logs
 %config %attr(0755, root, root) %{_sysconfdir}/cron.hourly/resalloc
 
 
 %changelog
+* Fri May 10 2019 Pavel Raiskup <praiskup@redhat.com> - 2.3-2
+- fix logrotate typo s/lib/log/, package it as config file
+
 * Fri May 10 2019 Pavel Raiskup <praiskup@redhat.com> - 2.3-1
 - logrotate config (per review rhbz#1707302)
 - provide manual page for resalloc-server (per rhbz#1707302)

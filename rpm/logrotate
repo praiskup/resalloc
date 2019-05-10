@@ -1,4 +1,4 @@
-/var/lib/resallocserver/main.log {
+/var/log/resallocserver/main.log {
     missingok
     notifempty
     rotate 4
@@ -6,7 +6,7 @@
     copytruncate
 }
 
-/var/lib/resallocserver/hooks.log {
+/var/log/resallocserver/hooks.log {
     missingok
     rotate 7
     daily

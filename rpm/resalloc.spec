@@ -28,7 +28,7 @@ the purposes of CI/CD tasks.
 Name:       %srcname
 Summary:    %sum - client tooling
 Version:    2.3
-Release:    2%{?dist}
+Release:    3%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -88,7 +88,7 @@ Requires: python-sqlalchemy
 Requires: python-yaml
 %endif
 
-Requires(pre): /usr/sbin/useradd /usr/sbin/mkhomedir_helper
+Requires(pre): /usr/sbin/useradd
 %description server
 %desc
 
@@ -227,6 +227,9 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 
 
 %changelog
+* Fri May 10 2019 Pavel Raiskup <praiskup@redhat.com> - 2.3-3
+- drop mkhomedir requires leftover
+
 * Fri May 10 2019 Pavel Raiskup <praiskup@redhat.com> - 2.3-2
 - fix logrotate typo s/lib/log/, package it as config file
 

@@ -144,7 +144,7 @@ mkdir -p %buildroot%_logdir
 install -p -m 644 %SOURCE1 %buildroot%_unitdir
 install -d -m 700 %buildroot%_homedir
 install -d -m 700 %buildroot%_sysconfdir/logrotate.d
-install -p -m 644 %SOURCE2 %buildroot%_sysconfdir/logrotate.d/resalloc
+install -p -m 644 %SOURCE2 %buildroot%_sysconfdir/logrotate.d/resalloc-server
 install -p -m 644 man/resalloc-server.1 %buildroot%_mandir/man1
 install -d -m 755 %buildroot/%_libexecdir
 install -p -m 755 %SOURCE3 %buildroot/%_libexecdir/%name-merge-hook-logs
@@ -221,7 +221,7 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 %_mandir/man1/%{name}-maint.1*
 %_mandir/man1/%{name}-server.1*
 %attr(0700, %sysuser, %sysgroup) %_homedir
-%config %_sysconfdir/logrotate.d/resalloc
+%config %_sysconfdir/logrotate.d/resalloc-server
 %_libexecdir/resalloc-merge-hook-logs
 %config %attr(0755, root, root) %{_sysconfdir}/cron.hourly/resalloc
 

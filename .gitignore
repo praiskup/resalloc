@@ -7,4 +7,3 @@ tags # ctags
 # The setup.py leftovers.
 build
 dist
-man

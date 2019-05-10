@@ -1,6 +1,7 @@
 include COPYING
 include Makefile
 include requirements.txt
+include man/resalloc-server.1
 recursive-include resalloc *.py
 recursive-include shelltests *.sh testrunner testlib
 recursive-include test-tooling resalloc* wrap

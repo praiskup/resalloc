@@ -27,8 +27,8 @@ the purposes of CI/CD tasks.
 
 Name:       %srcname
 Summary:    %sum - client tooling
-Version:    2.2
-Release:    3%{?dist}
+Version:    2.3
+Release:    1%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -141,6 +141,7 @@ install -p -m 644 %SOURCE1 %buildroot%_unitdir
 install -d -m 700 %buildroot%_homedir
 install -d -m 700 %buildroot%_sysconfdir/logrotate.d
 install -p -m 644 %SOURCE2 %buildroot%_sysconfdir/logrotate.d/resalloc
+install -p -m 644 man/resalloc-server.1 %buildroot%_mandir/man1
 
 
 %if %{with check}
@@ -210,13 +211,15 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 %_unitdir/resalloc.service
 %attr(0700, %sysuser, %sysgroup) %dir %_logdir
 %_mandir/man1/%{name}-maint.1*
+%_mandir/man1/%{name}-server.1*
 %attr(0700, %sysuser, %sysgroup) %_homedir
 %_sysconfdir/logrotate.d/resalloc
 
 
 %changelog
-* Fri May 10 2019 Pavel Raiskup <praiskup@redhat.com> - 2.2-3
+* Fri May 10 2019 Pavel Raiskup <praiskup@redhat.com> - 2.3-1
 - logrotate config (per review rhbz#1707302)
+- provide manual page for resalloc-server (per rhbz#1707302)
 
 * Fri May 10 2019 Pavel Raiskup <praiskup@redhat.com> - 2.2-2
 - move homedir from /home to /var/lib (per msuchy's review)

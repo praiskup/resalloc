@@ -1,0 +1,24 @@
+.TH resalloc-server "1" Manual
+.SH NAME
+resalloc-server \- resource allocator server
+.SH SYNOPSIS
+.B
+Resource allocator for expensive resources
+
+Server part doesn't accept argumetns; It is just simple server script which is
+usually executed from systemd's unit.
+
+The script is expected to be executed by
+.BR resalloc
+user, and it accepts
+configuration files
+.BR /etc/resallocserver/*.yaml
+
+
+.SH AUTHORS
+.B resalloc
+was written by Pavel Raiskup <praiskup@redhat.com>.
+.SH DISTRIBUTION
+The latest version of resalloc may be downloaded from
+.UR https://github.com/praiskup/resalloc
+.UE

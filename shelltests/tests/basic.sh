@@ -185,7 +185,7 @@ done
 success=false
 for _ in $(seq 30); do
     up=$(maint resource-list --up | wc -l)
-    test "$up" -eq "$PREALLOC" && success=true
+    test "$up" -eq "$PREALLOC" && success=true && break
     sleep 1
 done
 $success || die "unexpected number of resources after 30s: $up"

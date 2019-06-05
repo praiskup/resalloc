@@ -184,11 +184,12 @@ done
 
 success=false
 for _ in $(seq 30); do
-    up=$(maint resource-list --up | wc -l)
+    up=$(maint resource-list | wc -l)
     test "$up" -eq "$PREALLOC" && success=true && break
     sleep 1
 done
 $success || die "unexpected number of resources after 30s: $up"
+test $(maint resource-list --up | wc -l) -eq "$PREALLOC"
 
 check_id=$(printf "%06d" 1)
 info "check that all the log files are in place"

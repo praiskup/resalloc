@@ -211,7 +211,7 @@ maint resource-delete 20 21
 client ticket --tag A >/dev/null
 
 info "check that multiple checks are logged into single log file"
-sleep 15
+sleep 21 # there's 10s interval in Watcher.loop()
 test "2" -le "$(grep stderr "$WORKDIR"/hooks/000017_watch | wc -l)"
 test "2" -le "$(grep stdout "$WORKDIR"/hooks/000017_watch | wc -l)"
 

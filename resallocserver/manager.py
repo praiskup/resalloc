@@ -128,7 +128,7 @@ class TerminateWorker(Worker):
             session.add(resource)
             if resource.id_in_pool_object:
                 session.delete(resource.id_in_pool_object)
-            self.event.set()
+        self.event.set()
 
     def job(self):
         id_in_pool = None

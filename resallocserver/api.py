@@ -104,4 +104,4 @@ class ServerAPI(object):
             if not ticket:
                 raise ServerAPIException("no such ticket {0}".format(ticket_id))
             ticket.state = TState.CLOSED
-            self.sync.ticket.set()
+        self.sync.ticket.set()

@@ -217,8 +217,9 @@ test "2" -le "$(grep stdout "$WORKDIR"/hooks/000017_watch | wc -l)"
 list=$(maint resource-list)
 test $(echo "$list" | wc -l) -eq $(( PREALLOC + 1 ))
 
-! echo "$list" | grep ^20
-! echo "$list" | grep ^21
+for i in 20 21; do
+    echo "$list" | grep "^$i" && fail "id $i shouldn't exist anymore"
+done
 
 info "check that RESALLOC_ID_IN_POOL has sane numbers"
 number_of_tickets=40

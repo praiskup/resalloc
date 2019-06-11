@@ -27,8 +27,8 @@ the purposes of CI/CD tasks.
 
 Name:       %srcname
 Summary:    %sum - client tooling
-Version:    2.3
-Release:    3%{?dist}
+Version:    2.4
+Release:    1%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
@@ -58,11 +58,11 @@ BuildRequires: python-yaml
 
 Requires:   %default_python-%srcname = %version-%release
 
-Source0:    https://github.com/praiskup/%name/releases/download/v%version/%name-%version.tar.gz
-Source1:    resalloc.service
-Source2:    logrotate
-Source3:    merge-hook-logs
-Source4:    cron.hourly
+Source0: https://github.com/praiskup/%name/releases/download/v%version/%name-%version.tar.gz
+Source1: resalloc.service
+Source2: logrotate
+Source3: merge-hook-logs
+Source4: cron.hourly
 
 %description
 %desc
@@ -73,8 +73,8 @@ The %name package provides the client-side tooling.
 %package server
 Summary:    %sum - server part
 
-Requires:   crontabs
-Requires:   logrotate
+Requires: crontabs
+Requires: logrotate
 Requires:   %default_python-%srcname = %version-%release
 %if %{with python3}
 Requires: python3-alembic
@@ -227,6 +227,9 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 
 
 %changelog
+* Tue Jun 11 2019 Pavel Raiskup <praiskup@redhat.com> - 2.4-1
+- fix improperly handled thread communication
+
 * Fri May 10 2019 Pavel Raiskup <praiskup@redhat.com> - 2.3-3
 - drop mkhomedir requires leftover
 - configure logrotate to compress rotated logs

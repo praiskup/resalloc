@@ -108,12 +108,31 @@ def reload_config():
     return pools
 
 
+class ThreadLocalData(threading.local):
+    """
+    Object of threading.local is always empty right after t.start() is called.
+    But if we define __init__() here, the method is always called appropriately
+    for each thread (so we have a convenient way to initialize thread-local
+    data).
+
+    This trick is described in/taken from  `_threading_local.py` (cpython).
+    """
+    def __init__(self, **kw):
+        self.__dict__.update(kw)
+        super(ThreadLocalData, self).__init__()
+
+
 class Worker(threading.Thread):
     def __init__(self, event, pool, res_id):
-        self.resource_id = res_id
-        self.pool = pool
+        self.local = ThreadLocalData(
+            pool=pool,
+            resource_id=res_id,
+        )
         self.event = event
         threading.Thread.__init__(self)
+
+    def __getattr__(self, attr):
+        return getattr(self.local, attr)
 
     def run(self):
         self.log = log.getChild("worker")

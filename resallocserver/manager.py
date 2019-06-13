@@ -23,7 +23,7 @@ import subprocess
 import warnings
 from resalloc import helpers
 from resalloc.helpers import RState
-from resallocserver import db, models
+from resallocserver import models
 from resallocserver.db import session_scope
 from resallocserver.log import get_logger
 from resallocserver.logic import QResources, QTickets

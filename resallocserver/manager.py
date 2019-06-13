@@ -35,8 +35,8 @@ def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
                 catch_stdout_bytes=None):
     log.debug("running: " + command)
     pfx = 'RESALLOC_'
-    env = os.environ
-    env[pfx + 'ID']   = str(res_id)
+    env = os.environ.copy()
+    env[pfx + 'ID'] = str(res_id)
     env[pfx + 'NAME'] = str(res_name)
     env[pfx + 'POOL_ID'] = str(pool_id)
     env[pfx + 'ID_IN_POOL'] = str(id_in_pool)

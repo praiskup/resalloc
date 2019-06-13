@@ -27,7 +27,7 @@ the purposes of CI/CD tasks.
 
 Name:       %srcname
 Summary:    %sum - client tooling
-Version:    2.4
+Version:    2.5
 Release:    1%{?dist}
 License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
@@ -227,6 +227,9 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 
 
 %changelog
+* Thu Jun 13 2019 Pavel Raiskup <praiskup@redhat.com> - 2.5-1
+- thread safety - don't change os.environ
+
 * Tue Jun 11 2019 Pavel Raiskup <praiskup@redhat.com> - 2.4-1
 - fix improperly handled thread communication
 

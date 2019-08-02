@@ -456,7 +456,7 @@ class Manager(object):
     def _assign_tickets(self):
         with session_scope() as session:
             qticket = QTickets(session)
-            tickets = [x.id for x in qticket.new().order_by(models.Ticket.id).all()]
+            tickets = [x.id for x in qticket.waiting().order_by(models.Ticket.id).all()]
 
         for ticket_id in tickets:
             notify_ticket = False

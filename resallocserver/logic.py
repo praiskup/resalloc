@@ -90,8 +90,9 @@ class QResources(QObject):
 class QTickets(QObject):
     query = Query(models.Ticket)
 
-    def new(self):
-        return self.query.filter_by(resource_id=None)
+    def waiting(self):
+        return self.query.filter_by(resource_id=None)\
+                         .filter_by(state=TState.OPEN)
 
     def not_closed(self):
         return self.query.filter(models.Ticket.state != TState.CLOSED)

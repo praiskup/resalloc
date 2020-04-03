@@ -1,0 +1,80 @@
+How to start resalloc server
+============================
+
+1. Install `resalloc-server` package:
+
+    $ sudo dnf install -y resalloc-server
+
+2. Decide what database you'll run resalloc server  against, and make it
+   running:
+
+    You can use PostgreSQL or SQLite (and perhaps others from the
+    sqlalchemy compatibility list, but those are not tested).  For
+    simplicity, let's start with SQLite here:
+
+    $ sudo dnf install -y sqlite
+
+3. Configure the server:
+
+    This is done in server.yaml file:
+    $ sudo vim /etc/resallocserver/server.yaml
+
+    The point is to set correct `db_url` option there, it can be any
+    sqlalchemy database URL [1], for example:
+
+        # SQLite database, with database stored to
+        # /var/lib/resallocserver/db.sqlite, yes, you need 4 slashes!
+        db_url: 'sqlite:////var/lib/resallocserver/db.sqlite'
+
+        # PostgreSQL DB, user=resalloc, no password, database=resalloc
+        db_url: 'postgresql://resalloc@/resalloc'
+
+4. Configure the resource pools:
+
+    This is done in pools.yaml:
+    $ sudo vim /etc/resallocserver/server.yaml
+    See the documentation there.
+
+    Consider that some random number is the resource, so the resalloc
+    server will keep assigning random numbers (resources) to the tickets.
+    Something like this could by your configuration:
+
+      $ sudo cat /etc/resallocserver/server.yaml
+      pool_random_numbers:
+        max: 2
+        max_starting: 1
+        max_prealloc: 1
+        # generate the random number, and print it to stdout
+        cmd_new: "/bin/sh -c 'echo $RANDOM'"
+        # this is NOOP now, since we don't have to remove the number :-)
+        cmd_delete: "/bin/sh -c 'echo deleting ...'"
+        tags:
+          - random_number
+          - shell_number
+
+5. Start the resalloc server:
+
+    $ sudo systemctl start resalloc
+
+6. Try to take the ticket, and check the allocated resources:
+
+    $ resalloc ticket --tag random_number
+    1
+    $ resalloc ticket --tag random_number
+    2
+    $ resalloc ticket-wait 1
+    12315
+    $ resalloc ticket-close 1
+
+You can do the basic maintenance using `resalloc-maint` under resalloc
+user:
+
+  $ sudo su - resalloc
+  $> resalloc-maint ticket-list
+  2 - state=OPEN tags=random_number resource=pool_random_numbers_00000002_20200403_124756
+  $> resalloc-maint resource-list
+  2 - pool_random_numbers_00000002_20200403_124756 pool=pool_random_numbers tags=random_number,shell_number status=UP
+  3 - pool_random_numbers_00000003_20200403_125116 pool=pool_random_numbers tags=random_number,shell_number status=UP
+  4 - pool_random_numbers_00000004_20200403_125127 pool=pool_random_numbers tags=random_number,shell_number status=UP
+
+[1] https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls

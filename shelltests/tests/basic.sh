@@ -32,6 +32,7 @@ debug "I'm in $PWD"
 cleanup_actions=()
 cleanup ()
 {
+    debug "cleanup"
     set +e
     for action in "${cleanup_actions[@]}"
     do
@@ -82,7 +83,7 @@ EOF
 export CONFIG_DIR=$WORKDIR/etc
 
 server &>/dev/null
-cleanup_actions+=( "kill $server_pid" )
+cleanup_actions+=( "shutdown_server $server_pid" )
 
 # Wait for the server to start up.
 counter=30

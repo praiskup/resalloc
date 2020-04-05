@@ -38,12 +38,17 @@ class Connection(object):
     def __init__(self, conn):
         self.connection = C_XMLRPC(conn)
 
-    def newTicket(self, tags=None):
+    def newTicket(self, tags=None, sandbox=None):
         if tags == None:
             raise ResallocClientException("no tags specified")
 
         t = Ticket(connection=self.connection)
-        t.id = self.connection.takeTicket(tags)
+        args = [tags]
+        if sandbox:
+            args.append(sandbox)
+
+        # we can not pass kwargs here, xmlrpc doesn't seem to support that
+        t.id = self.connection.takeTicket(*args)
         return t
 
     def getTicket(self, ticket_id):

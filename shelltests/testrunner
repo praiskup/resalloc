@@ -24,8 +24,14 @@ WORKDIR=/tmp
 . ./testlib
 
 result=true
+
+export POSTGRESQL_PORT=65432
+export SERVER_PORT=55554
+
 for TEST_NAME; do
-    echo "===> running test 'tests/$TEST_NAME'"
+    SERVER_PORT=$(( SERVER_PORT - 1 ))
+    POSTGRESQL_PORT=$(( POSTGRESQL_PORT - 1 ))
+    echo "===> running test 'tests/$TEST_NAME' ($PYTHON+$DATABASE)"
 
     export WORKDIR=$(mktemp -d /tmp/resalloc-tests-$TEST_NAME-XXXXXXX)
 

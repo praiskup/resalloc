@@ -24,19 +24,54 @@ TESTTOOLDIR=$(readlink -f "$TESTTOOLDIR")
 SERVER_BIN=$TESTTOOLDIR/resalloc-server
 CLIENT_BIN=$TESTTOOLDIR/resalloc
 MAINT_BIN=$TESTTOOLDIR/resalloc-maint
-# TODO: get unique port
-SERVER_PORT=55554
+: "${SERVER_PORT=55554}"
 
-client () { "$CLIENT_BIN" --connection http://localhost:"$SERVER_PORT" "$@" ; }
+debug_cmdline()
+{
+    echo "$(date +%H:%M:%S.%N): $*" >> "$WORKDIR/client.log"
+    "$@"
+}
+
+client () {
+    debug_cmdline "$CLIENT_BIN" --connection http://localhost:"$SERVER_PORT" "$@"
+}
 server () { "$SERVER_BIN" "$@" & server_pid=$! ; }
-maint () { "$MAINT_BIN" "$@";  }
+maint () { debug_cmdline "$MAINT_BIN" "$@";  }
+
+shutdown_server()
+{
+    kill "$1"
+    # wait for it gently stops
+    attempt=0
+    while kill -0 "$1" &>/dev/null; do
+        sleep 1
+        attempt=$(( attempt + 1 ))
+        if test $attempt -gt 30; then
+            fail "can not stop server"
+            exit 1
+        fi
+    done
+}
 
 : ${WORKDIR=`mktemp -d`}
 
 info  () { echo >&2 " * $*" ; }
 debug () { echo >&2 " ~ $*" ; }
 error () { echo >&2 "ERROR: $*" ; }
-fail  () { echo >&2 "FAIL: $*"; false ; }
+fail  ()
+{
+    echo >&2 "FAIL: $*"
+    echo >&2 "====="
+    maint resource-list
+    echo >&2 "====="
+    maint ticket-list
+    echo >&2 "====="
+    cat "$WORKDIR/main.log" >&2
+    echo >&2 "====="
+    cat "$WORKDIR/client.log" >&2
+    echo >&2 "====="
+    false
+}
 fatal () { echo >&2 "FATAL: $*"; exit 1 ; }
 
 # postgresql_start PORT DIR SOCKETDIR

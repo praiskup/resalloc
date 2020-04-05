@@ -39,3 +39,26 @@
 ##      tags:
 ##          - ci_test_machine_x86_64
 ##          - ci_test_machine
+##
+##    # The "reuse" feature options.  These options configure the mechanism of
+##    # re-assigning of previously used resources to multiple subsequent tickets
+##    # (when the assigned tickets belong to the same --sandbox).  Still, when the
+##    # feature is enabled, and the --sandbox isn't specified on particular
+##    # ticket, the corresponding resource can never be re-used (in such case it
+##    # is assigned to an unique/random sandbox).
+##
+##    # Number of seconds given to user to re-take the same resource after it has
+##    # been released from previous ticket.  The resource is not deleted earlier
+##    # than after this amount of time spent in "idle" (not assigned to any
+##    # ticket) state.  Zero value (default) means the "reuse" feature is
+##    # disabled, and resources are deleted right after they are released.
+##    reuse_opportunity_time: 0
+##
+##    # How many times the resource can be "reused".  Zero means unlimited
+##    # (default).
+##    reuse_max_count: 0
+##
+##    # How long (in seconds) can this resource be assigned to --sandbox and still
+##    # "reused".  The time spent is measured since the resource was taken for the
+##    # first time (assigned to sandbox).  Default is 3600s.
+##    reuse_max_time: 3600

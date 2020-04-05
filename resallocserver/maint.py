@@ -33,7 +33,8 @@ class Maintainer(object):
                 resources = resources.on()
 
             for resource in resources.all():
-                msg = "{id} - {name} pool={pool} tags={tags} status={status}"
+                msg = ("{id} - {name} pool={pool} tags={tags} status={status} "
+                       "releases={releases} ticket={ticket}")
                 tags = ','.join(list(resource.tag_set))
                 print(msg.format(
                     id=resource.id,
@@ -41,6 +42,8 @@ class Maintainer(object):
                     pool=resource.pool,
                     tags=tags,
                     status=resource.state,
+                    releases=resource.releases_counter,
+                    ticket=resource.ticket.id if resource.ticket else 'NULL',
                 ))
 
     def resource_delete(self, resources=None):

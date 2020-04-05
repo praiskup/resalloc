@@ -40,6 +40,16 @@ parser_new_ticket.add_argument(
         "--tag", dest="tags", action="append",
         required=True,
         help="What tag the Resource should have")
+parser_new_ticket.add_argument(
+        "--sandbox", dest="sandbox",
+        help=(
+            "Place the assigned resource into sandbox, and allow it's re-use "
+            "for subsequent tickets (having the same --sandbox).  This makes "
+            "your ticket resolution faster, depending whether the server "
+            "allows this feature or not.  When --sandbox isn't specified, "
+            "server uses randomly generated unique value and never re-uses "
+            "the assigned resource."
+        ))
 parser_get_ticket = subparsers.add_parser(
         "ticket-check",
         help="Obtain ticket")
@@ -66,7 +76,7 @@ def main():
 
         conn = Connection(arg.connection)
         if 'ticket' == arg.subparser:
-            ticket = conn.newTicket(arg.tags)
+            ticket = conn.newTicket(arg.tags, arg.sandbox)
             print(ticket.id)
 
         elif 'ticket-check' == arg.subparser:

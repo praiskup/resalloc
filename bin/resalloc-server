@@ -119,10 +119,7 @@ def init_by_models():
 
 if __name__ == "__main__":
     # Create the database, if not exist yet.
-    if db.engine.dialect.name == 'sqlite':
-        init_by_models()
-    else:
-        init_by_alembic()
+    init_by_alembic()
 
     # Synchronization tool.
     sync = Synchronizer()

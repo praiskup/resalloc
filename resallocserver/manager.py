@@ -26,7 +26,9 @@ from resalloc.helpers import RState
 from resallocserver import models
 from resallocserver.db import session_scope
 from resallocserver.log import get_logger
-from resallocserver.logic import QResources, QTickets
+from resallocserver.logic import (
+        QResources, QTickets, assign_ticket, release_resource
+)
 from resallocserver.config import CONFIG_DIR, CONFIG
 
 log = get_logger(__name__)
@@ -309,6 +311,10 @@ class Pool(object):
     tags = None
     name_pattern = "{pool_name}_{id}_{datetime}"
 
+    reuse_opportunity_time = 0
+    reuse_max_count = 0
+    reuse_max_time = 3600
+
     def __init__(self, id):
         self.id = id
         # TODO: drop this
@@ -431,10 +437,44 @@ class Pool(object):
     def _detect_closed_tickets(self):
         with session_scope() as session:
             qres = QResources(session, pool=self.name)
-            for res in qres.clean_candidates().all():
-                res.state = RState.DELETE_REQUEST
-                session.add(res)
 
+            for resource in qres.taken():
+                ticket = resource.ticket
+                assert ticket
+                if ticket.state == helpers.TState.CLOSED:
+                    release_resource(ticket)
+
+    def _request_resource_removal(self):
+        with session_scope() as session:
+            now = time.time()
+            qres = QResources(session, pool=self.name)
+            for res in qres.clean_candidates():
+                if not self.reuse_opportunity_time:
+                    # reuse turned off by default, remove no matter what
+                    log.debug("Removing %s, not reusable", res.name)
+                    res.state = RState.DELETE_REQUEST
+                    continue
+
+                if res.released_at < (now - self.reuse_opportunity_time):
+                    log.debug("Removing %s, not taken quickly enough", res.name)
+                    res.state = RState.DELETE_REQUEST
+                    continue
+
+                if self.reuse_max_time:
+                    last_allowed = now - self.reuse_max_time
+                    if res.sandboxed_since < last_allowed:
+                        log.debug("Removing %s, too long in one sandbox, "
+                                  "since %s, last_allowed %s, now %s",
+                                  res.name, res.sandboxed_since, last_allowed,
+                                  now)
+                        res.state = RState.DELETE_REQUEST
+                        continue
+
+                if self.reuse_max_count and \
+                        res.releases_counter > self.reuse_max_count:
+                    log.debug("Removing %s, max reuses reached", res.name)
+                    res.state = RState.DELETE_REQUEST
+                    continue
 
     def _garbage_collector(self, event):
         to_terminate = []
@@ -467,24 +507,36 @@ class Manager(object):
                 ticket_tags = ticket.tag_set
                 for resource in resources:
                     res_tags = resource.tag_set
-                    if ticket_tags.issubset(res_tags):
-                        # We have found appropriate resource!
-                        ticket.resource_id = resource.id
-                        if ticket.tid:
-                            notify_ticket = ticket.tid
-                        session.add_all([ticket])
-                        break
+                    if resource.sandbox and resource.sandbox != ticket.sandbox:
+                        continue
+                    if not ticket_tags.issubset(res_tags):
+                        continue
+
+                    # We have found appropriate resource!
+                    log.debug("Assigning %s to %s", resource.name, ticket.id)
+                    assign_ticket(resource, ticket)
+                    if ticket.tid:
+                        notify_ticket = ticket.tid
+                    break
+
             if notify_ticket:
                 self._notify_waiting(notify_ticket)
 
 
     def _loop(self):
         log.debug("Manager's loop.")
-        self._assign_tickets()
+
+        # Cleanup the old resources.
         for _, pool in reload_config().items():
-            pool._allocate_more_resources(self.sync.ticket)
             pool._detect_closed_tickets()
+            pool._request_resource_removal()
             pool._garbage_collector(self.sync.ticket)
+            pool._allocate_more_resources(self.sync.ticket)
+
+        # Assign tasks.  This needs to be done after _detect_closed_tickets(),
+        # because that call potentially releases some resources which need be
+        # preferrably re-used to not waste resources.
+        self._assign_tickets()
 
 
     def run(self):

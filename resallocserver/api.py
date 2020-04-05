@@ -39,9 +39,10 @@ class ServerAPI(object):
     def my_id(self):
         return str(threading.current_thread())
 
-    def takeTicket(self, tags=None):
+    def takeTicket(self, tags=None, sandbox=None):
         with session_scope() as session:
             ticket = models.Ticket()
+            ticket.sandbox = sandbox
             tag_objects = []
             for tag in (tags or []):
                 to = models.TicketTag()

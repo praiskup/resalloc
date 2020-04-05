@@ -42,9 +42,11 @@ class Ticket(Base, TagMixin):
     id = Column(Integer, primary_key=True)
     resource_id = Column(Integer, ForeignKey('resources.id'))
     resource = relationship('Resource',
-                            backref=backref('ticket', uselist=False))
+                            backref=backref('tickets'),
+                            foreign_keys="Ticket.resource_id")
     state = Column(String, default=TState.OPEN)
     tid = Column(String)
+    sandbox = Column(String, nullable=True)
 
 
 class Resource(Base, TagMixin):
@@ -58,6 +60,23 @@ class Resource(Base, TagMixin):
     state = Column(String, nullable=False, default=RState.STARTING)
     check_last_time = Column(Float, default=time.time())
     check_failed_count = Column(Integer, default=0)
+
+    # The ticket that we are working on _now_.
+    # One resouce can work at most on one ticket (nullable), and one ticket can
+    # have at most one resource (unique).
+    ticket_id = Column(Integer, ForeignKey('tickets.id'), nullable=True,
+                       unique=True)
+    ticket = relationship('Ticket', foreign_keys="Resource.ticket_id")
+
+    # Re-using resources for more tickets, if the resources fall into the same
+    # sandbox category.
+    sandbox = Column(String, nullable=True)
+    # the timestamp this resource was first assigned to any ticket
+    sandboxed_since = Column(Float, nullable=True)
+    # when the last ticket finished with this resource
+    released_at = Column(Float, nullable=True)
+    # how many times we returned this resource to pool
+    releases_counter = Column(Integer, default=0)
 
     @property
     def id_in_pool(self):

@@ -15,10 +15,35 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import time
+import uuid
+
 from resalloc.helpers import RState, TState
 from resallocserver import models
 from sqlalchemy.orm import Query
 from sqlalchemy import or_
+
+
+def assign_ticket(resource, ticket):
+    resource.ticket_id = ticket.id
+    ticket.resource_id = resource.id
+
+    if not ticket.sandbox:
+        # generate random sandbox
+        ticket.sandbox = str(uuid.uuid1())
+
+    if not resource.sandbox:
+        resource.sandbox = ticket.sandbox
+        resource.sandboxed_since = time.time()
+
+    return resource.sandbox == ticket.sandbox
+
+
+def release_resource(ticket):
+    resource = ticket.resource
+    resource.ticket_id = None
+    resource.released_at = time.time()
+    resource.releases_counter += 1
 
 
 class QObject(object):
@@ -41,34 +66,45 @@ class QResources(QObject):
         return self.query.filter(models.Resource.state != RState.ENDED)
 
     def ready(self):
-        return (self.up()
-                    .outerjoin(models.Ticket)
-                    .filter(models.Ticket.id == None))
+        """
+        Get ready resources, those which were never assigned or are released.
+        The sandbox-assigned resources are sorted above others - so they can be
+        re-used first.
+        """
+        return (self.up().filter(models.Resource.ticket_id.is_(None))
+                         .order_by(models.Resource.sandbox.is_(None)))
 
     def taken(self):
+        """
+        Get the list of all _taken_ resources == those that have OPEN ticket
+        assigned.
+        """
         return (self.up()
-                    .outerjoin(models.Ticket)
-                    .filter(models.Ticket.id != None))
+                    .filter(models.Resource.ticket_id.isnot(None)))
 
     def starting(self):
         return self.query.filter_by(state=RState.STARTING)
 
     def stats(self):
         items = {}
-        items['on']     = self.on().outerjoin(models.Ticket).all()
+        items['on']     = self.on().all()
         items['up']     = [x for x in items['on'] if x.state  == RState.UP]
-        items['ready']  = [x for x in items['up'] if x.ticket == None]
-        items['taken']  = [x for x in items['up'] if x.ticket != None]
+        items['ready']  = [x for x in items['up'] if x.ticket_id is None]
+        items['taken']  = [x for x in items['up'] if x.ticket_id is not None]
         items['start']  = [x for x in items['on'] if x.state  == RState.STARTING]
         items['term']   = [x for x in items['on'] if x.state  == RState.DELETING]
         return {key: len(value) for (key, value) in items.items()}
 
     def clean_candidates(self):
-        return self.on().filter(models.Resource.state != RState.DELETING)\
-                        .outerjoin(models.Ticket)\
-                        .filter(or_(
-                            models.Ticket.state == TState.CLOSED,
-                        ))
+        return (
+            self.on()
+            # isn't it already deleted?
+            .filter(models.Resource.state != RState.DELETING)
+            # isn't it still used?
+            .filter(models.Resource.ticket_id.is_(None))
+            # was this actually ever used?
+            .filter(models.Resource.released_at.isnot(None))
+        )
 
     def clean(self):
         return self.on().filter_by(state=RState.DELETE_REQUEST)

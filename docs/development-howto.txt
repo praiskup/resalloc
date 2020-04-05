@@ -1,0 +1,88 @@
+Quick development start
+=======================
+
+For the testing purposes during development, there are several scripts in
+./test-tooling directory in this git repo.  To quickly start the server
+you can run 'test-tooling/resalloc-server' script.
+
+That script reads configuration from the git's ./etc directory.  So please
+first make sure that you have correct config:
+
+    $ cat ./etc/server.yaml
+    db_url: sqlite:////tmp/server-sql
+    logdir: /tmp/logdir
+    loglevel: debug
+
+When using that ^, you need to make sure that at least /tmp/logdir exists,
+and that the SQLite database is installed:
+
+    $ mkdir /tmp/logdir
+    $ sudo dnf install -y sqlite
+
+Then, to initialize the database you can either:
+
+    $ cd resallocserver
+    $ alembic-3 upgrade head  # initializes the DB
+
+.. or simply run the server, it initializes the DB as well:
+
+    $ ./test-tooling/resalloc-server
+    Watcher loop
+    Manager's loop.
+    => POOL('basic'): on=0 up=0 ready=0 taken=0 start=0 term=0
+    id in pool: 0
+    Allocating new resource id=1 in pool 'basic' by echo >&2 before; env | grep RESALLOC_; echo >&2 after
+    => POOL('basic'): on=1 up=0 ready=0 taken=0 start=1 term=0
+    running: echo >&2 before; env | grep RESALLOC_; echo >&2 after
+    Allocator ends with state=UP
+    Manager's loop.
+    => POOL('basic'): on=1 up=1 ready=1 taken=0 start=0 term=0
+    id in pool: 1
+
+Since all the relations are ready - and some resources are already
+allocated by server, you can quickly check sqlite access:
+
+    $ sqlite3 /tmp/server-sql
+    sqlite> select id, name from resources;
+    id          name
+    ----------  ------------------------------
+    1           basic_00000001_20200405_081251
+    2           basic_00000002_20200405_081251
+    3           basic_00000003_20200405_081251
+    sqlite>
+
+
+Changing the database model
+===========================
+
+You should start with database up2date with models (we can start right
+after the paragraph above) so alembic knows where to start from.
+
+Then you can change the model and let alembic auto-generate the migration:
+
+    # generate the revision
+    $ alembic-3 revision --autogenerate -m 'test change'
+    Generating /.../resallocserver/alembic/versions/ac417f0250d0_test_change.py ...  done
+
+Review the generate file, update, and use it to update the database:
+
+    # migrate the database towards the new version
+    $ alembic-3 upgrade head
+
+Done.  The DB is migrated to the new version.  Please keep the migrations
+compatible at least with SQLite and PostgreSQL.
+
+
+Running tests
+=============
+
+You can run the testsuite against python3 by:
+
+    $ make check TEST_PYTHONS=python3
+    ...
+
+
+Submitting patches
+==================
+
+Submit PRs against https://github.com/praiskup/resalloc/ !  Thank you.

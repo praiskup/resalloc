@@ -2,13 +2,16 @@ language: python
 
 matrix:
   include:
-    - python: "2.7"
-    - python: "3.5"
-    - python: "3.6"
     - python: "3.7"
-      dist: xenial
-    - python: "3.8-dev"
-      dist: xenial
+      script: .travis/copr-build
+      name: mock RPM build in Copr
+      if: type = pull_request
+    - python: "3.9-dev" # soon to be in Rawhide
+    - python: "3.8"
+    - python: "3.7"
+    - python: "3.6"
+    - python: "3.5"
+    - python: "2.7"
 
 before_install:
   # The debian package starts the server :/

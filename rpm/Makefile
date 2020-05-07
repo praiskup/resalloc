@@ -27,10 +27,15 @@ spec = $(project).spec
 
 all: srpm
 
+$(spec):
+	sed \
+	    -e 's/@VERSION@/$(shell $(project_version))/' \
+	$(spec).tpl > $(spec)
+
 $(tarball): clean
 	$(generate_tarball)
 
-srpm: $(tarball)
+srpm: $(tarball) $(spec)
 	rm -rf *.src.rpm
 	rpmbuild -bs $(rpmbuild_options) $(spec)
 

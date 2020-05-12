@@ -1,0 +1,14 @@
+#! /bin/bash
+
+: "${PYTHON=python}"
+
+TARBALL_VERSION=$(cd ..; $PYTHON setup.py --version)
+
+VERSION=$(git describe --tags)
+case $VERSION in
+    *-*)
+        suffix=$(echo "$VERSION" | cut -d'-' -f2- | sed 's/-/_/g')
+        echo "$TARBALL_VERSION.$suffix"
+        ;;
+    *)  echo "$TARBALL_VERSION" ;;
+esac

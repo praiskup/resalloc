@@ -58,7 +58,7 @@ BuildRequires: python-yaml
 
 Requires:   %default_python-%srcname = %version-%release
 
-Source0: https://github.com/praiskup/%name/releases/download/v%version/%name-%version.tar.gz
+Source0: https://github.com/praiskup/%name/releases/download/v%version/%name-@TARBALL_VERSION@.tar.gz
 Source1: resalloc.service
 Source2: logrotate
 Source3: merge-hook-logs
@@ -121,7 +121,7 @@ to the resalloc server.
 
 
 %prep
-%setup -q
+%autosetup -p1 -n %name-@TARBALL_VERSION@
 
 
 %build

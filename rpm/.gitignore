@@ -1,4 +1,5 @@
 *.src.rpm
 *.tar*
+*.spec
 noarch/
 resalloc*/

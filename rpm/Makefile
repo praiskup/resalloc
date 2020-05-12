@@ -1,8 +1,10 @@
 project = resalloc
 
-project_version = \
+tarball_version = \
 	cd .. ; \
 	python setup.py --version
+
+project_version = ./spec-version
 
 generate_tarball = \
 	cd .. ; \
@@ -27,10 +29,17 @@ spec = $(project).spec
 
 all: srpm
 
+.PHONY: $(spec)
 $(spec):
-	sed \
-	    -e 's/@VERSION@/$(shell $(project_version))/' \
-	$(spec).tpl > $(spec)
+	version=$(shell $(project_version)) ; \
+	tbversion=$(shell $(tarball_version)) ; \
+	replace=%version ; \
+	if test "$$version" != "$$tbversion" ; then \
+	    replace=$$tbversion ; \
+	fi; \
+	sed -e "s/@VERSION@/$$version/" \
+	    -e "s/@TARBALL_VERSION@/$$replace/" \
+	    $(spec).tpl > $(spec)
 
 $(tarball): clean
 	$(generate_tarball)

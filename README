@@ -46,3 +46,15 @@ Then, you can work with the resource:
 The $output variable will contain important info from the 'cmd_new'
 command run by resalloc server.  If you request VMs, you typically want
 'cmd_new' command which outputs an IP of the allocated virtual machine.
+
+Installation
+------------
+
+The released versions are installable from Fedora and Fedora EPEL repositories,
+just do
+
+    $ sudo dnf install -y resalloc        # clients
+    $ sudo dnf install -y resalloc-server # server
+
+Pre-release RPMs are available in testing Copr repositories:
+https://copr.fedorainfracloud.org/coprs/praiskup/resalloc/

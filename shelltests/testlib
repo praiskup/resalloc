@@ -40,7 +40,7 @@ maint () { debug_cmdline "$MAINT_BIN" "$@";  }
 
 shutdown_server()
 {
-    kill "$1"
+    kill "$1" 2>/dev/null
     # wait for it gently stops
     attempt=0
     while kill -0 "$1" &>/dev/null; do

@@ -48,6 +48,8 @@ class Ticket(object):
     """
     id = None
     output = None
+    closed = None
+    ready = None
 
     def __init__(self, ticket_id, connection=None):
         # pylint: disable=invalid-name
@@ -56,14 +58,18 @@ class Ticket(object):
 
     def collect(self):
         """
-        Return True if the ticket has already assigned resource, and store the
-        output to ``output`` attribute.
+        Return True if the ticket was assigned the resource (even though it is
+        already closed).  Also put
+        (a) the resource text (text given by allocator script) into ``output``
+            attribute,
+        (b) readiness status into ``ready`` atrribute, and
+        (c) closed True if the ticket is already closed.
         """
         output = self._connection.call("collectTicket", self.id)
-        ready = output['ready']
-        if ready:
-            self.output = output['output']
-        return ready
+        self.closed = output['closed']
+        self.output = output['output']
+        self.ready = output['ready']
+        return bool(self.ready)
 
     def wait(self):
         """

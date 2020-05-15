@@ -62,19 +62,21 @@ class ServerAPI(object):
         ticket = session.query(models.Ticket).get(ticket_id)
         if not ticket:
             raise ServerAPIException("no such ticket")
-        return ticket.resource
+        return ticket
 
 
     def collectTicket(self, ticket_id):
         output = {
             'ready': False,
             'output': None,
+            'closed': None
         }
         with session_scope() as session:
-            resource = self._checkTicket(ticket_id, session)
-            if resource:
-                output['output'] = resource.data
+            ticket = self._checkTicket(ticket_id, session)
+            if ticket.resource:
+                output['output'] = ticket.resource.data
                 output['ready'] = True
+            output['closed'] = ticket.state == TState.CLOSED
         return output
 
 

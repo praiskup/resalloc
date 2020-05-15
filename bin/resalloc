@@ -81,11 +81,17 @@ def main():
 
         elif 'ticket-check' == arg.subparser:
             ticket = conn.getTicket(arg.ticket)
-            if ticket.collect():
+            ready = ticket.collect()
+            retval = 0
+            if ticket.closed:
+                sys.stderr.write("WARNING: already closed ticket\n")
+                retval = 1
+            if ready:
                 sys.stdout.write(str(ticket.output))
-            else:
-                sys.stderr.write("ticket is still not processed\n")
-                return 1
+                return retval
+
+            sys.stderr.write("ticket is still not processed\n")
+            return 1
 
         elif 'ticket-wait' == arg.subparser:
             ticket = conn.getTicket(arg.ticket)

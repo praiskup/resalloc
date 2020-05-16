@@ -23,4 +23,14 @@ shelltests:
 	done ; \
 	$$status
 
-check: shelltests
+.PHONY: unittests
+unittests:
+	status=true ; \
+	for python in $(TEST_PYTHONS); do \
+	    PYTHON=$$python ./unittests.sh || status=false ; \
+	done ;\
+	$$status
+
+check:
+	@$(MAKE) unittests
+	@$(MAKE) shelltests

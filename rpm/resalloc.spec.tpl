@@ -40,6 +40,8 @@ BuildRequires: postgresql-server
 BuildRequires: python3-alembic
 BuildRequires: python3-devel
 BuildRequires: python3-psycopg2
+BuildRequires: python3-pytest
+BuildRequires: python3-pytest-cov
 BuildRequires: python3-setuptools
 BuildRequires: python3-six
 BuildRequires: python3-sqlalchemy
@@ -50,6 +52,9 @@ BuildRequires: python3-yaml
 BuildRequires: python-alembic
 BuildRequires: python2-devel
 BuildRequires: python-psycopg2
+BuildRequires: python2-mock
+BuildRequires: python2-pytest
+BuildRequires: python2-pytest-cov
 BuildRequires: python2-setuptools
 BuildRequires: python2-six
 BuildRequires: python-sqlalchemy

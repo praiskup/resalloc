@@ -55,7 +55,7 @@ setup(
     license='GPLv2+',
     url='https://github.com/praiskup/resalloc',
     platforms=['any'],
-    packages=find_packages(),
+    packages=find_packages(exclude=('tests',)),
     data_files=[
         ('/etc/resallocserver', ['config/pools.yaml', 'config/server.yaml']),
     ],

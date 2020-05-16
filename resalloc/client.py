@@ -2,6 +2,8 @@
 Client resalloc Python API.
 """
 
+import errno
+import socket
 import time
 
 try:
@@ -17,6 +19,14 @@ class _WrappedXMLRPCClient(object):
     def __init__(self, connection_string, survive_server_restart):
         self._conn = C_XMLRPC(connection_string)
         self.survive_server_restart = survive_server_restart
+        self._retry_errors = [
+            errno.ECONNREFUSED,
+            errno.ECONNABORTED,
+            errno.ECONNRESET,
+            errno.ENETUNREACH,
+            errno.ENETRESET,
+            errno.ENETDOWN,
+        ]
 
     def call(self, name, *args):
         """
@@ -25,13 +35,13 @@ class _WrappedXMLRPCClient(object):
         """
         fcall = getattr(self._conn, name)
         # we can not pass kwargs here, xmlrpc doesn't seem to support that
-        if not self.survive_server_restart:
-            return fcall(*args)
         while True:
             try:
                 return fcall(*args)
-            except OSError as os_e:
-                if os_e.errno != 101:
+            except socket.error as os_e:
+                if not self.survive_server_restart:
+                    raise
+                if os_e.errno not in self._retry_errors:
                     raise
             time.sleep(3)
 

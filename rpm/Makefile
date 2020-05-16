@@ -37,9 +37,11 @@ $(spec):
 	if test "$$version" != "$$tbversion" ; then \
 	    replace=$$tbversion ; \
 	fi; \
+	rm -f $(spec); \
 	sed -e "s/@VERSION@/$$version/" \
 	    -e "s/@TARBALL_VERSION@/$$replace/" \
-	    $(spec).tpl > $(spec)
+	    $(spec).tpl > $(spec) ; \
+	chmod -w $(spec)
 
 $(tarball): clean
 	$(generate_tarball)

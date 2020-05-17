@@ -1,0 +1,22 @@
+[MASTER]
+# Pickle collected data for later comparisons.
+persistent=no
+
+init-hook=
+    import os
+    import sys
+    import subprocess
+    gitrootdir = subprocess.check_output(["git", "rev-parse", "--show-toplevel"]).decode("utf-8").strip()
+    sys.path.insert(0, os.path.join(gitrootdir))
+
+
+[MESSAGES CONTROL]
+# Reasoning for wide warning ignore
+# ---------------------------------
+# useless-object-inheritance
+#     We support python 2.
+disable=useless-object-inheritance
+
+
+[DESIGN]
+min-public-methods=1

@@ -2,6 +2,9 @@ __pycache__
 *.py[oc]
 *egg*
 
+# pytest-cov
+.coverage
+
 # ctags
 tags
 

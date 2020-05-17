@@ -1,5 +1,6 @@
 include COPYING
 include Makefile
+include NEWS
 include requirements.txt
 include unittests.sh
 include man/resalloc-server.1

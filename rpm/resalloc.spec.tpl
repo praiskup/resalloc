@@ -214,7 +214,7 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 
 
 %files server
-%doc README
+%doc README NEWS
 %license COPYING
 %{default_sitelib}/%{name}server
 %{_bindir}/%{name}-server

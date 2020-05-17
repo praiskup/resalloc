@@ -188,16 +188,18 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 %systemd_postun_with_restart resalloc.service
 
 
+%doc_files NEWS README
+
 %files
+%doc %doc_files
 %license COPYING
-%doc README
 %{_bindir}/%{name}
 %_mandir/man1/%{name}.1*
 
 
 %if %{with python3}
 %files -n python3-%srcname
-%doc README
+%doc %doc_files
 %license COPYING
 %{python3_sitelib}/%{name}
 %{python3_sitelib}/%{name}-*.egg-info
@@ -206,7 +208,7 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 
 %if %{with python2}
 %files -n python2-%srcname
-%doc README
+%doc %doc_files
 %license COPYING
 %{python2_sitelib}/%{name}
 %{python2_sitelib}/%{name}-*.egg-info
@@ -214,7 +216,7 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 
 
 %files server
-%doc README NEWS
+%doc %doc_files
 %license COPYING
 %{default_sitelib}/%{name}server
 %{_bindir}/%{name}-server

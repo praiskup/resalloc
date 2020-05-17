@@ -1,0 +1,18 @@
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+New in 3.0:
+
+* New features:
+
+  - Resource "re-using" mechanism was added.  Resources are newly put to
+    sandboxes (per ticket sandbox flag), and when the resource is released
+    from ticket the resource can be assigned to other (subsequent) ticket
+    with the same sandbox flag.
+
+  - Python API; The resalloc.client.Connection constructor now accepts
+    'request_survives_server_restart'.  When set to True (default False),
+    each XML request network failure is ignored and the request is retried
+    till it succeeds.  This allows administrator to do resalloc server
+    maintenance, restart it and clients survive without noticing.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

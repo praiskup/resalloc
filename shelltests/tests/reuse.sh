@@ -56,7 +56,7 @@ cat > etc/pools.yaml <<EOF
 reuse:
     max: $NORMAL_MAX
     max_prealloc: $NORMAL_PREALLOC
-    cmd_new: "echo >&2 before; env | grep RESALLOC_; echo >&2 after"
+    cmd_new: "echo >&2 before; env | grep ^RESALLOC_; echo >&2 after"
     cmd_delete: "echo >&2 stderr; echo stdout"
     cmd_livecheck: "echo >&2 stderr; echo stdout"
     livecheck_period: 1
@@ -69,7 +69,7 @@ reuse:
 reuse_count:
     max: $COUNT_MAX
     max_prealloc: $COUNT_PREALLOC
-    cmd_new: "echo >&2 before; env | grep RESALLOC_; echo >&2 after"
+    cmd_new: "echo >&2 before; env | grep ^RESALLOC_; echo >&2 after"
     cmd_delete: "echo >&2 stderr; echo stdout"
     cmd_livecheck: "echo >&2 stderr; echo stdout"
     livecheck_period: 1
@@ -82,7 +82,7 @@ reuse_count:
 reuse_time:
     max: $TIME_MAX
     max_prealloc: $TIME_PREALLOC
-    cmd_new: "echo >&2 before; env | grep RESALLOC_; echo >&2 after"
+    cmd_new: "echo >&2 before; env | grep ^RESALLOC_; echo >&2 after"
     cmd_delete: "echo >&2 stderr; echo stdout"
     cmd_livecheck: "echo >&2 stderr; echo stdout"
     livecheck_period: 1

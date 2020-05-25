@@ -5,6 +5,7 @@ SHELLTEST_OPTIONS :=
 
 SHELL_TESTS := \
 	basic.sh \
+	check.sh \
 	reuse.sh
 
 TEST_PYTHONS   := python2 python3

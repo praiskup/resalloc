@@ -72,6 +72,7 @@ class QResources(QObject):
         re-used first.
         """
         return (self.up().filter(models.Resource.ticket_id.is_(None))
+                         .filter(models.Resource.check_failed_count==0)
                          .order_by(models.Resource.sandbox.is_(None)))
 
     def taken(self):
@@ -104,6 +105,17 @@ class QResources(QObject):
             .filter(models.Resource.ticket_id.is_(None))
             # was this actually ever used?
             .filter(models.Resource.released_at.isnot(None))
+        )
+
+    def check_failure_candidates(self):
+        """
+        List of resources that are UP, and have non-zero check_failed_count.
+        """
+        return (
+            self.up()
+            # isn't it still used?
+            .filter(models.Resource.ticket_id.is_(None))
+            .filter(models.Resource.check_failed_count > 0)
         )
 
     def clean(self):

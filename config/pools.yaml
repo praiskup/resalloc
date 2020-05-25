@@ -24,7 +24,12 @@
 ##      cmd_new: "/bin/allocate-vm"
 ##
 ##      # This command is run to check that the VM is up.  If the command succeeds,
-##      # resource is considered to be working.
+##      # resource is considered to be working.  We run this checker
+##      # periodically against all "UP" resources, no matter if the resources
+##      # has assigned ticket.  Among other environment variables, the script has
+##      # also the RESALLOC_RESOURCE_DATA env variable available which contains
+##      # base64 encoded value of the stdout output from `cmd_new` (for virtual
+##      # machines, it e.g. usually contains the IP address in some form).
 ##      cmd_livecheck: "/bin/check-vm"
 ##
 ##      # The minimum delay between two livechecks is 300s (not more often).

@@ -47,7 +47,7 @@ cat > etc/pools.yaml <<EOF
 basic:
     max: $MAX
     max_prealloc: $PREALLOC
-    cmd_new: "echo >&2 before; env | grep RESALLOC_; echo >&2 after"
+    cmd_new: "echo >&2 before; env | grep ^RESALLOC_; echo >&2 after"
     cmd_delete: "echo >&2 stderr; echo stdout"
     cmd_livecheck: "echo >&2 stderr; echo stdout"
     livecheck_period: 1
@@ -170,7 +170,7 @@ while read -r line; do
         RESALLOC_NAME=basic_*) ;;
         RESALLOC_POOL_ID=basic) ;;
         RESALLOC_ID_IN_POOL=*) ;;
-        *) fail "invalid data in output: $line"
+        *) fail "invalid data in output: '$line'"
     esac
 done <<<"$alloc_output"
 lines=$(echo "$alloc_output" | grep ^RESALLOC | wc -l)
@@ -193,10 +193,12 @@ $success || die "unexpected number of resources after 30s: $up"
 test $(maint resource-list --up | wc -l) -eq "$PREALLOC"
 
 check_id=$(printf "%06d" 1)
-info "check that all the log files are in place"
+info "wait till all the log files are in place"
+while ! test -f "$WORKDIR"/hooks/"$check_id"_watch; do
+    sleep 0.5
+done
 test -f "$WORKDIR"/hooks/"$check_id"_alloc
 test -f "$WORKDIR"/hooks/"$check_id"_terminate
-test -f "$WORKDIR"/hooks/"$check_id"_watch
 
 info "check that log files contain both stderr and stdout"
 grep -q before "$WORKDIR"/hooks/"$check_id"_alloc

@@ -30,6 +30,9 @@ CONFIG = {
     'host': 'localhost',
     'port': 49100,
     'loglevel': 'info',
+    # Maximum number of seconds Manager threads wait in loop.  Used for tests
+    # only ATM.  Watcher sleeps sleeptime/2.
+    'sleeptime': 20,
 }
 
 CONFIG_DIR = config_dir

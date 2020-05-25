@@ -15,6 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import base64
 import os
 import errno
 import time
@@ -34,7 +35,7 @@ from resallocserver.config import CONFIG_DIR, CONFIG
 log = get_logger(__name__)
 
 def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
-                catch_stdout_bytes=None):
+                catch_stdout_bytes=None, data=None):
     log.debug("running: " + command)
     pfx = 'RESALLOC_'
     env = os.environ.copy()
@@ -42,6 +43,8 @@ def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
     env[pfx + 'NAME'] = str(res_name)
     env[pfx + 'POOL_ID'] = str(pool_id)
     env[pfx + 'ID_IN_POOL'] = str(id_in_pool)
+    if data is not None:
+        env[pfx + 'RESOURCE_DATA'] = base64.b64encode(data)
 
     ldir = os.path.join(CONFIG['logdir'], 'hooks')
     try:
@@ -243,6 +246,10 @@ class Watcher(threading.Thread):
         pools = reload_config()
         to_check = {}
         with session_scope() as session:
+            # Even though we never terminate resources that have assigned
+            # ticket, we still check them.  This raises the check limit before
+            # user releases the ticket and the resource can be terminated as
+            # soon as possible.
             up = QResources(session).up().all()
             for item in up:
                 if not item.pool in pools:
@@ -253,6 +260,7 @@ class Watcher(threading.Thread):
                     'last': item.check_last_time,
                     'fail': item.check_failed_count,
                     'id_in_pool': item.id_in_pool,
+                    'data': item.data,
                 }
 
         for res_id, data in to_check.items():
@@ -263,14 +271,15 @@ class Watcher(threading.Thread):
                 # Not yet needed check.
                 continue
 
-            failed_count = 0
             rc = run_command(
                     pool.id,
                     res_id,
                     data['name'],
                     data['id_in_pool'],
                     pool.cmd_livecheck,
-                    'watch')
+                    'watch',
+                    data=data["data"],
+            )
 
             with session_scope() as session:
                 res = session.query(models.Resource).get(res_id)
@@ -283,16 +292,11 @@ class Watcher(threading.Thread):
                     res.check_failed_count = 0
                 session.add(res)
                 session.flush()
-                failed_count = res.check_failed_count
-
-            if failed_count >= 3:
-                log.debug("Watcher plans to kill {0}".format(res_id))
-                TerminateWorker(self.event, pool, res_id).start()
 
     def run(self):
         while True:
             self.loop()
-            time.sleep(10)
+            time.sleep(CONFIG["sleeptime"] / 2)
 
 
 class Pool(object):
@@ -448,6 +452,13 @@ class Pool(object):
         with session_scope() as session:
             now = time.time()
             qres = QResources(session, pool=self.name)
+
+            for res in qres.check_failure_candidates():
+                if res.check_failed_count >= 3:
+                    log.debug("Removing %s, continuous failures", res.name)
+                    res.state = RState.DELETE_REQUEST
+                    continue
+
             for res in qres.clean_candidates():
                 if not self.reuse_opportunity_time:
                     # reuse turned off by default, remove no matter what
@@ -548,7 +559,7 @@ class Manager(object):
         self._loop()
         while True:
             # Wait for the request to set the event (or timeout).
-            self.sync.ticket.wait(timeout=20)
+            self.sync.ticket.wait(timeout=CONFIG["sleeptime"])
             # Until the wait() is called again, any additional event.set() call
             # means another round (even though it might do nothing).
             self._loop()

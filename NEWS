@@ -1,5 +1,18 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in 3.1:
+
+* Enhancements:
+
+  - Resource Watcher thread doesn't directly terminate resources, but only
+    checks periodically for liveness.  The termination task is given to
+    Manager thread to avoid races.
+
+  - The Watcher thread has a new environment variable
+    RESALLOC_RESOURCE_DATA with base64 encoded output from 'cmd_new'.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in 3.0:
 
 * New features:

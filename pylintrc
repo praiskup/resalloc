@@ -9,6 +9,11 @@ init-hook=
     gitrootdir = subprocess.check_output(["git", "rev-parse", "--show-toplevel"]).decode("utf-8").strip()
     sys.path.insert(0, os.path.join(gitrootdir))
 
+# Reasoning for class ignore
+# --------------------------
+# RState, TState
+#     Pylint doesn't parse the meta-class to detect the attributes.
+ignored-classes=RState,TState
 
 [MESSAGES CONTROL]
 # Reasoning for wide warning ignore

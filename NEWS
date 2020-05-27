@@ -7,6 +7,9 @@ New in 3.2:
   - Configurable command `cmd_release` to be run before we mark the
     resource as reusable again.
 
+  - After server restart, schedule all inconsistent resources to be
+    terminated.  (mitigates issue#41)
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 New in 3.1:

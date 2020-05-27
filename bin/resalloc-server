@@ -25,6 +25,7 @@ from resalloc import helpers
 from resallocserver import db, models, api
 from resallocserver.config import CONFIG
 from resallocserver.manager import Manager
+from resallocserver.logic import QResources
 from resallocserver.log import get_logger
 import alembic.config
 
@@ -123,6 +124,11 @@ if __name__ == "__main__":
 
     # Synchronization tool.
     sync = Synchronizer()
+
+    # Delete leftovers from previous session, we need to run everything
+    # asynchronously, see https://github.com/praiskup/resalloc/issues/41
+    with db.session_scope() as session:
+        QResources(session=session).fix_broken_after_restart(log)
 
     # Start server on background.
     server = Server()

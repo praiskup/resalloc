@@ -10,6 +10,8 @@ New in 3.2:
   - After server restart, schedule all inconsistent resources to be
     terminated.  (mitigates issue#41)
 
+  - Systemd serrver service is restarted upon failure (just in case).
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 New in 3.1:

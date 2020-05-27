@@ -35,7 +35,9 @@
 ##      # The minimum delay between two livechecks is 300s (not more often).
 ##      livecheck_period: 300
 ##
-##      # Delete the resource (and sub-resources, if any).
+##      # Delete the resource (and sub-resources, if any).  This command may be
+##      # called multiple times when server needs, so you should make sure it's
+##      # effects are idempotent.
 ##      # TODO: The atomicity specification needs to be polished.
 ##      cmd_delete: "/bin/terminate-vm"
 ##

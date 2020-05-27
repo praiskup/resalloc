@@ -86,6 +86,21 @@ class QResources(QObject):
     def starting(self):
         return self.query.filter_by(state=RState.STARTING)
 
+    def fix_broken_after_restart(self, log):
+        """
+        Since we execute everything asynchronous by threads, restart of resalloc
+        server leads to killing the async threads.
+        """
+        query = self.query.filter(models.Resource.state.in_([
+            RState.STARTING,
+            RState.DELETING,
+            RState.RELEASING,
+        ]))
+        for resource in query:
+            log.warning("Resource %s in inconsistent state %s => %s",
+                        resource.name, resource.state, RState.DELETE_REQUEST)
+            resource.state = RState.DELETE_REQUEST
+
     def stats(self):
         items = {}
         items['on']     = self.on().all()

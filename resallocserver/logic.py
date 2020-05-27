@@ -98,9 +98,7 @@ class QResources(QObject):
 
     def clean_candidates(self):
         return (
-            self.on()
-            # isn't it already deleted?
-            .filter(models.Resource.state != RState.DELETING)
+            self.up()
             # isn't it still used?
             .filter(models.Resource.ticket_id.is_(None))
             # was this actually ever used?

@@ -1,4 +1,5 @@
 # Central brain of the resalloc server.
+# -*- coding: utf-8 -*-
 # Copyright (C) 2017 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -325,6 +326,25 @@ class Pool(object):
         self.name = id
 
 
+    def loop(self, event):
+        """
+        Perform one Pool iteration across all the corresponding instances,
+        and adjust the resource/ticket states.  ``event`` is the
+        ``Synchronizer().ticket`` object.
+        """
+
+        # decouple ticket from resource
+        self._detect_closed_tickets()
+
+        # switch UP → DELETE_REQUEST
+        self._request_resource_removal()
+
+        # switch DELETE_REQUEST → ENDED
+        self._garbage_collector(event)
+
+        self._allocate_more_resources(event)
+
+
     def validate(self):
         assert(self.cmd_new)
         assert(self.cmd_delete)
@@ -539,10 +559,7 @@ class Manager(object):
 
         # Cleanup the old resources.
         for _, pool in reload_config().items():
-            pool._detect_closed_tickets()
-            pool._request_resource_removal()
-            pool._garbage_collector(self.sync.ticket)
-            pool._allocate_more_resources(self.sync.ticket)
+            pool.loop(self.sync.ticket)
 
         # Assign tasks.  This needs to be done after _detect_closed_tickets(),
         # because that call potentially releases some resources which need be

@@ -1,5 +1,14 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in 3.2:
+
+* Enhancements:
+
+  - Configurable command `cmd_release` to be run before we mark the
+    resource as reusable again.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in 3.1:
 
 * Enhancements:

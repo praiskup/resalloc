@@ -59,6 +59,7 @@ reuse:
     cmd_new: "echo >&2 before; env | grep ^RESALLOC_; echo >&2 after"
     cmd_delete: "echo >&2 stderr; echo stdout"
     cmd_livecheck: "echo >&2 stderr; echo stdout"
+    cmd_release: "echo >&2 stderr; echo stdout; echo \$RESALLOC_RESOURCE_DATA | base64 --decode"
     livecheck_period: 1
     tags:
         - A
@@ -158,6 +159,13 @@ client ticket-close "$id"
 sleep 2
 id=$(client ticket --tag A --sandbox=sb)
 client ticket-wait "$id" > "$WORKDIR/second-ticket"
+resource_id=$(maint resource-list | grep "ticket=$id" | cut -d' ' -f 1)
+test -n "$resource_id" || fail "no assigned resource??"
+set -- "$WORKDIR/hooks/"*000"${resource_id}_release"
+release_log=$1
+test 1 -eq "$(grep -c stdout "$release_log")" || fail "no stdout in release log"
+test 1 -eq "$(grep -c stderr "$release_log")" || fail "no stderr in release log"
+test 1 -eq "$(grep -c RESALLOC_NAME= "$release_log")" || fail "no data decoded"
 client ticket-close "$id"
 diff "$WORKDIR/first-ticket" "$WORKDIR/second-ticket" || fail "different output"
 

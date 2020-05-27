@@ -48,6 +48,10 @@ class RState(StateSet):
         'UP',
         'DELETE_REQUEST',
         'DELETING',
+
+        # Running 'cmd_release' worker.
+        'RELEASING',
+
         # This should be properly stopped instance, without any leftover
         # allocated resources.  The database entries may be garbage collected.
         'ENDED',

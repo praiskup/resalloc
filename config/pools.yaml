@@ -63,6 +63,15 @@
 ##    # (default).
 ##    reuse_max_count: 0
 ##
+##    # Execute "cleanup" script right after we release the ticket from it.
+##    # By default None.  When this script fails, the resource is marked for
+##    # removal and won't be re-used.  Among other environment variables, the
+##    # script has also the RESALLOC_RESOURCE_DATA env variable available which
+##    # contains base64 encoded value of the stdout output from `cmd_new` (for
+##    # virtual machines, it e.g. usually contains the IP address in some form).
+##
+##    #cmd_release: "/bin/prepare-for-reuse"
+##
 ##    # How long (in seconds) can this resource be assigned to --sandbox and still
 ##    # "reused".  The time spent is measured since the resource was taken for the
 ##    # first time (assigned to sandbox).  Default is 3600s.

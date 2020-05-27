@@ -137,6 +137,10 @@ class Worker(threading.Thread):
         self.event = event
         threading.Thread.__init__(self)
 
+    def job(self):
+        """ The task to be done by background thread. """
+        raise NotImplementedError
+
     def __getattr__(self, attr):
         return getattr(self.local, attr)
 
@@ -185,6 +189,29 @@ class TerminateWorker(Worker):
                 'terminate',
         )
         self.close()
+
+
+class ReleaseWorker(Worker):
+    """ Call `Pool.cmd_release` shell command asynchronously """
+    def job(self):
+        with session_scope() as session:
+            resource = session.query(models.Resource).get(self.resource_id)
+            id_in_pool = resource.id_in_pool
+            session.expunge(resource)
+
+        out = run_command(self.pool.id, resource.id, resource.name, id_in_pool,
+                          self.pool.cmd_release, "release", data=resource.data)
+        status = out["status"]
+
+        with session_scope() as session:
+            resource = session.query(models.Resource).get(self.resource_id)
+            if status:
+                # mark it for removal
+                resource.releases_counter = self.pool.reuse_max_count + 1
+            resource.state = RState.UP
+
+        if not status:
+            self.event.set()
 
 
 class AllocWorker(Worker):
@@ -312,6 +339,7 @@ class Pool(object):
     cmd_new = None
     cmd_delete = None
     cmd_livecheck = None
+    cmd_release = None
     livecheck_period = 600
     tags = None
     name_pattern = "{pool_name}_{id}_{datetime}"
@@ -333,8 +361,8 @@ class Pool(object):
         ``Synchronizer().ticket`` object.
         """
 
-        # decouple ticket from resource
-        self._detect_closed_tickets()
+        # decouple ticket from resource, and maybe switch UP → RELEASING
+        self._detect_closed_tickets(event)
 
         # switch UP → DELETE_REQUEST
         self._request_resource_removal()
@@ -458,7 +486,7 @@ class Pool(object):
 
             self.allocate(event)
 
-    def _detect_closed_tickets(self):
+    def _detect_closed_tickets(self, event):
         with session_scope() as session:
             qres = QResources(session, pool=self.name)
 
@@ -467,6 +495,13 @@ class Pool(object):
                 assert ticket
                 if ticket.state == helpers.TState.CLOSED:
                     release_resource(ticket)
+                    if self.cmd_release:
+                        # UP → RELEASING → UP, TODO: we might want to optimize
+                        # this a bit, and stop calling the releasing script when
+                        # the resource is not releasable anymore (max_reuses
+                        # reached, etc.).
+                        resource.state = helpers.RState.RELEASING
+                        ReleaseWorker(event, self, int(resource.id)).start()
 
     def _request_resource_removal(self):
         with session_scope() as session:

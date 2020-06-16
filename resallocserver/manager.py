@@ -165,8 +165,8 @@ class TerminateWorker(Worker):
             resource = session.query(models.Resource).get(self.resource_id)
             if resource.ticket:
                 if resource.ticket.state == helpers.TState.OPEN:
-                    log.warning("can't delete {0}, ticket opened"\
-                                .format(resource.name))
+                    self.log.warning("can't delete {0}, ticket opened"\
+                                     .format(resource.name))
                     return
             resource.state = RState.DELETING
             session.add(resource)
@@ -257,7 +257,7 @@ class AllocWorker(Worker):
                     tag_obj.resource_id = resource.id
                     tags.append(tag_obj)
 
-            log.debug("Allocator ends with state={0}".format(resource.state))
+            self.log.debug("Allocator ends with state={0}".format(resource.state))
             session.add_all(tags + [resource])
 
             if resource.state == RState.ENDED:

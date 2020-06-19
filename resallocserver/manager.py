@@ -86,7 +86,7 @@ def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
                     captured_string += line
 
                 stdout_stopped = True
-                captured_string += "<< trimmed >>\n"
+                captured_string += b"<< trimmed >>\n"
                 continue
 
             stdout_written += len(line)

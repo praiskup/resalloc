@@ -1,5 +1,16 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in 3.3:
+
+* Bugfixes:
+
+  - Large stdout output from `cmd_new` command is properly trimmed, without
+    traceback and leftover always-STARTING instance.
+
+  - Better (fixed) logging from AllocWorker.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in 3.2:
 
 * Enhancements:

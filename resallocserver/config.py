@@ -27,7 +27,7 @@ CONFIG = {
     'db_url': 'sqlite:////var/lib/resalloc-server/db.sqlite',
     'logdir': '/var/log/resallocserver',
     # Bind the xmlrpc server to this hostname/port.
-    'host': 'localhost',
+    'hostname': 'localhost',
     'port': 49100,
     'loglevel': 'info',
     # Maximum number of seconds Manager threads wait in loop.  Used for tests

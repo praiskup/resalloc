@@ -91,7 +91,7 @@ class Server(threading.Thread):
     server = None
 
     def run(self):
-        self.server = CLSXMLRPC((CONFIG['host'], CONFIG['port']))
+        self.server = CLSXMLRPC((CONFIG['hostname'], CONFIG['port']))
         self.server.allow_none = True
         self.server.daemon_threads = True
         self.server.register_introspection_functions()

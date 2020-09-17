@@ -91,7 +91,9 @@ class Server(threading.Thread):
     server = None
 
     def run(self):
-        self.server = CLSXMLRPC((CONFIG['hostname'], CONFIG['port']))
+        # prefer "hostname" over "host", and fallback to "localhost"
+        hostname = CONFIG.get("hostname") or CONFIG.get("host") or "localhost"
+        self.server = CLSXMLRPC((hostname, CONFIG['port']))
         self.server.allow_none = True
         self.server.daemon_threads = True
         self.server.register_introspection_functions()

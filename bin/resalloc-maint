@@ -45,6 +45,18 @@ p_t_list = subparsers.add_parser(
         "ticket-list",
         help="List not-yet-closed tickets")
 
+foreach = subparsers.add_parser(
+    "foreach-resource",
+    help="Execute command for each resource",
+)
+foreach.add_argument(
+    "--command",
+    default="echo {name}",
+    help=(
+        "Shell command to execute.  This accepts variables like "
+        "{state}, {data_utf8}, {name}, etc."),
+)
+
 
 def main():
     try:
@@ -59,6 +71,9 @@ def main():
 
         elif 'ticket-list' in args.subparser:
             maint.ticket_list()
+
+        elif 'foreach-resource' in args.subparser:
+            maint.foreach_resource(args)
 
     except KeyboardInterrupt:
         sys.stderr.write("\nInterrupted by user.")

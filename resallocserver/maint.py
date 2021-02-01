@@ -15,6 +15,9 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import subprocess
+import sys
+
 from resalloc.helpers import RState
 from resallocserver.logic import QResources, QTickets
 from resallocserver.models import Resource
@@ -73,3 +76,20 @@ class Maintainer(object):
                     output += ' resource=' + ticket.resource.name
 
                 print (output)
+
+    def foreach_resource(self, args):
+        """ Execute shell command for each resource """
+        command = args.command
+        with session_scope() as session:
+            resources = QResources(session)
+            for resource in resources.on().all():
+                try:
+                    command = args.command.format(
+                        name=resource.name,
+                        state=resource.state,
+                        data_utf8=resource.data.decode("utf8"),
+                    )
+                except KeyError as err:
+                    sys.stderr.write(str(err))
+
+                subprocess.call(command, shell=True)

@@ -9,6 +9,13 @@
 ##      # instances at the same time could DDoS the resource provider.
 ##      max_starting: 2
 ##
+##      # The minimal amount of seconds manager has to wait between attempts
+##      # to allocate new resoruces in this pool (between two executions of
+##      # cmd_new command).  When this is 10s, and some resource began starting
+##      # 5s ago, a new one won't be started earlier than after 5s.  Default
+##      # is 0 - start as soon as possible.
+##      start_delay: 0
+##
 ##      # Maximum number of resources to be pre-allocated.  Taken resources are not
 ##      # counted into this limit (if some users takes some resource, a new resource
 ##      # is automatically started instead in background - up to this limit).

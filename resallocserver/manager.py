@@ -478,7 +478,7 @@ class Pool(object):
             log.debug(msg)
 
             if stats['on'] >= self.max \
-                   or stats['ready'] + stats['start'] >= self.max_prealloc \
+                   or stats['ready'] + stats['start'] - stats['released'] >= self.max_prealloc \
                    or stats['start'] >= self.max_starting \
                    or self._too_soon():
                 # Quota reached, don't allocate more.

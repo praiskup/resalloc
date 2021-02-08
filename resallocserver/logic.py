@@ -109,6 +109,7 @@ class QResources(QObject):
         items['taken']  = [x for x in items['up'] if x.ticket_id is not None]
         items['start']  = [x for x in items['on'] if x.state  == RState.STARTING]
         items['term']   = [x for x in items['on'] if x.state  == RState.DELETING]
+        items['released'] = [x for x in items['up'] if x.releases_counter > 0]
         return {key: len(value) for (key, value) in items.items()}
 
     def clean_candidates(self):

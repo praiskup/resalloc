@@ -1,5 +1,25 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in 3.4:
+
+* New features:
+
+  - The 'resalloc-maint' command got a new sub-command 'foreach-resource'
+    that can be used for programatic way of executing commands for each
+    running resource.
+
+* Bugfixes:
+
+  - We fixed a bug in calculation of "preallocated" resources; previously
+    released resources were counted as free-to-use by anyone - thus also
+    pre-allocated.  But these are not useable by anyone, and shouldn't be
+    taken as preallocated.
+
+  - We re-added the "host" config option, which is just for backward
+    compatibility.  Users still should use 'hostname' preferably.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in 3.3:
 
 * Bugfixes:

@@ -17,7 +17,7 @@
 
 import time
 from sqlalchemy import (Column, DateTime, String, Integer, Float, ForeignKey,
-        func, LargeBinary, UniqueConstraint)
+        func, LargeBinary, UniqueConstraint, Index)
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -40,11 +40,11 @@ class Pool(Base):
 class Ticket(Base, TagMixin):
     __tablename__ = 'tickets'
     id = Column(Integer, primary_key=True)
-    resource_id = Column(Integer, ForeignKey('resources.id'))
+    resource_id = Column(Integer, ForeignKey('resources.id'), index=True)
     resource = relationship('Resource',
                             backref=backref('tickets'),
                             foreign_keys="Ticket.resource_id")
-    state = Column(String, default=TState.OPEN)
+    state = Column(String, default=TState.OPEN, index=True)
     tid = Column(String)
     sandbox = Column(String, nullable=True)
 
@@ -56,11 +56,19 @@ class Resource(Base, TagMixin):
     user = Column(String, nullable=True)
     # The output from 'allocation' script.
     data = Column(LargeBinary)
-    pool = Column(String, nullable=False)
-    state = Column(String, nullable=False, default=RState.STARTING)
+    pool = Column(String, nullable=False, index=True)
+    state = Column(String, nullable=False, default=RState.STARTING, index=True)
     check_last_time = Column(Float, default=time.time())
     check_failed_count = Column(Integer, default=0)
 
+    __table_args__ = (
+        Index('ix_not_ended_resources', state,
+              postgresql_where=(state != 'ENDED'),
+              sqlite_where=(state!= 'ENDED')),
+    )
+
+
+    # CREATE INDEX resources_state_idx1 ON public.resources USING btree (state) WHERE ((state)::text <> 'ENDED'::text)
     # The ticket that we are working on _now_.
     # One resouce can work at most on one ticket (nullable), and one ticket can
     # have at most one resource (unique).
@@ -100,7 +108,8 @@ class IDWithinPool(Base):
 class ResourceTag(Base):
     __tablename__ = 'resource_tags'
     id = Column(String, primary_key=True)
-    resource_id = Column(Integer, ForeignKey('resources.id'), primary_key=True)
+    resource_id = Column(Integer, ForeignKey('resources.id'), primary_key=True,
+                         index=True)
     resource = relationship('Resource', backref=backref('tags'))
 
     def __str__(self):
@@ -110,7 +119,8 @@ class ResourceTag(Base):
 class TicketTag(Base):
     __tablename__ = 'ticket_tags'
     id = Column(String, primary_key=True)
-    ticket_id = Column(Integer, ForeignKey('tickets.id'), primary_key=True)
+    ticket_id = Column(Integer, ForeignKey('tickets.id'), primary_key=True,
+                       index=True)
     ticket = relationship('Ticket', backref=backref('tags'))
 
     def __str__(self):

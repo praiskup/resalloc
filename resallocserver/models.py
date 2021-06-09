@@ -63,8 +63,7 @@ class Resource(Base, TagMixin):
 
     __table_args__ = (
         Index('ix_not_ended_resources', state,
-              postgresql_where=(state != 'ENDED'),
-              sqlite_where=(state!= 'ENDED')),
+              postgresql_where=(state != 'ENDED')),
     )
 
 

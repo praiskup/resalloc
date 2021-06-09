@@ -33,6 +33,7 @@ License:    GPLv2+
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
 
+BuildRequires: make
 BuildRequires: postgresql-server
 
 

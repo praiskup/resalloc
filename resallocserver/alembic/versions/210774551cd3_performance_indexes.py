@@ -25,8 +25,7 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_resources_pool'), ['pool'], unique=False)
         batch_op.create_index(batch_op.f('ix_resources_state'), ['state'], unique=False)
         batch_op.create_index('ix_not_ended_resources', ['state'], unique=False,
-                              postgresql_where=sa.text("state != 'ENDED'"),
-                              sqlite_where=sa.text("state != 'ENDED'"))
+                              postgresql_where=sa.text("state != 'ENDED'"))
 
     with op.batch_alter_table('ticket_tags', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_ticket_tags_ticket_id'), ['ticket_id'], unique=False)

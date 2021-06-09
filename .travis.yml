@@ -1,8 +1,9 @@
+---
 language: python
 
 branches:
   only:
-  - master
+    - main
 
 matrix:
   include:
@@ -10,7 +11,7 @@ matrix:
       script: .travis/copr-build
       name: mock RPM build in Copr
       if: type = pull_request
-    - python: "3.9-dev" # soon to be in Rawhide
+    - python: "3.9"  # soon to be in Rawhide
     - python: "3.8"
     - python: "3.7"
     - python: "3.6"

@@ -222,6 +222,7 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 %{default_sitelib}/%{name}server
 %{_bindir}/%{name}-server
 %{_bindir}/%{name}-maint
+%{_bindir}/%{name}-check-vm-ip
 %attr(0700, %sysuser, %sysgroup) %dir %{_sysconfdir}/%{name}server
 %config(noreplace) %{_sysconfdir}/%{name}server/*
 %_unitdir/resalloc.service

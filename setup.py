@@ -62,7 +62,8 @@ setup(
     package_data={
         'resallocserver': ['alembic.ini'],
     },
-    scripts=['bin/resalloc', 'bin/resalloc-server', 'bin/resalloc-maint'],
+    scripts=['bin/resalloc', 'bin/resalloc-server', 'bin/resalloc-maint',
+             'bin/resalloc-check-vm-ip'],
     install_requires=get_requirements(),
     cmdclass={
         'build_manpages': build_manpages,

@@ -1,0 +1,34 @@
+#! /bin/sh
+
+# VM IP checker for 'cmd_check' in Resalloc.
+# Copyright (C) 2021 Red Hat, Inc.
+#
+# Assuming the resource is virtual machine, and the DATA provided by 'cmd_new'
+# command is an IP addres - we can use this script in 'cmd_check' to check that
+# we can ssh-access the root@ account on that IP.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+die() { echo "$*" >&2 ; exit 1; }
+
+set -x
+set -e
+test -n "$RESALLOC_NAME"
+test -n "$RESALLOC_RESOURCE_DATA"
+
+# we only put IP out in spawning script, nothing else
+set -- $(echo "$RESALLOC_RESOURCE_DATA" | base64 --decode)
+IP=$1
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 "root@$IP" true

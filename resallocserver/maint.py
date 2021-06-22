@@ -84,10 +84,13 @@ class Maintainer(object):
             resources = QResources(session)
             for resource in resources.on().all():
                 try:
+                    utf_data = "<None>"
+                    if resource.data:
+                        utf_data = resource.data.decode("utf8")
                     command = args.command.format(
                         name=resource.name,
                         state=resource.state,
-                        data_utf8=resource.data.decode("utf8"),
+                        data_utf8=utf_data,
                     )
                 except KeyError as err:
                     sys.stderr.write(str(err))

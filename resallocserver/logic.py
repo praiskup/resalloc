@@ -105,11 +105,18 @@ class QResources(QObject):
         items = {}
         items['on']     = self.on().all()
         items['up']     = [x for x in items['on'] if x.state  == RState.UP]
+        # Resources that can be assigned.
         items['ready']  = [x for x in items['up'] if x.ticket_id is None]
+        # Opposite for "ready".
         items['taken']  = [x for x in items['up'] if x.ticket_id is not None]
         items['start']  = [x for x in items['on'] if x.state  == RState.STARTING]
         items['term']   = [x for x in items['on'] if x.state  == RState.DELETING]
-        items['released'] = [x for x in items['up'] if x.releases_counter > 0]
+        # Ready, but already released resources that we can only assign to
+        # a ticket from the same sandbox it was assigned before.
+        items['released'] = [x for x in items['ready'] if x.releases_counter > 0]
+        # Ready resources that have not been assigned to any ticket/sandbox yet.
+        items['free'] = [x for x in items['ready'] if x.releases_counter <= 0]
+        items['releasing'] = [x for x in items['on'] if x.state == RState.RELEASING]
         return {key: len(value) for (key, value) in items.items()}
 
     def clean_candidates(self):

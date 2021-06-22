@@ -1,5 +1,20 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in 3.7:
+
+* Bugfixes:
+
+  - Added new helper script 'resalloc-check-vm-ip', that is often useful
+    inside `cmd_livecheck` command.
+
+  - Re-taken (released) resources are not causing additional allocation
+    of resources over the max_prealloc quota.
+
+  - The `resalloc-maint foreach-resource` command doesn't traceback on
+    starting resources that don't have any data stored, yet.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in 3.6:
 
 * Bugfixes:

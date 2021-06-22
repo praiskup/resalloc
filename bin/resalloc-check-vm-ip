@@ -1,11 +1,11 @@
 #! /bin/sh
 
-# VM IP checker for 'cmd_check' in Resalloc.
+# VM IP checker for 'cmd_livecheck' in Resalloc.
 # Copyright (C) 2021 Red Hat, Inc.
 #
 # Assuming the resource is virtual machine, and the DATA provided by 'cmd_new'
-# command is an IP addres - we can use this script in 'cmd_check' to check that
-# we can ssh-access the root@ account on that IP.
+# command is an IP addres - we can use this script in 'cmd_livecheck' to check
+# that we can ssh-access the root@ account on that IP.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

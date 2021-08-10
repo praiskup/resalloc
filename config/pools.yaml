@@ -48,9 +48,26 @@
 ##      # TODO: The atomicity specification needs to be polished.
 ##      cmd_delete: "/bin/terminate-vm"
 ##
-##      # List of tags which any resource coming from this pool will have.  Based on
-##      # this, resources are assigned to user's tickets.
+##      # List of tags all resources coming from this pool will have.  Based on
+##      # these tags, resources are assigned to user's tickets.  Different pools
+##      # can provide the same kind of resources (same tags).   To prefer
+##      # resources from one pool over another, there's a possibility
+##      # to specify a priority value for each tag (default 0).  Resalloc
+##      # server then, when assigning resources to tags, prefers resources with
+##      # higher tag priority score.  See on example:
+##      #  - when a preallocated resource A has tags foo (priority 0), bar
+##      #    (priority 1) and baz (priority 2), and
+##      #  - another preallocated resource B has tags foo (priority 10), bar
+##      #    (priority 3) and baz (priority 1), and
+##      #  - a user ticket asks for 'bar' and 'baz' tags,
+##      # then Resalloc will prefer the resource B, because the score for their
+##      # requested tags is 4 (3+1) (whilst the other is 1+2=3).
+##      #
+##      # This list accepts either dict values with tag-name/tag-priority
+##      # fields, or string values (tag-name).
 ##      tags:
+##          - name: compute_node
+##            priority: 5
 ##          - ci_test_machine_x86_64
 ##          - ci_test_machine
 ##

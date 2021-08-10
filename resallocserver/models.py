@@ -110,6 +110,7 @@ class ResourceTag(Base):
     resource_id = Column(Integer, ForeignKey('resources.id'), primary_key=True,
                          index=True)
     resource = relationship('Resource', backref=backref('tags'))
+    priority = Column(Integer, default=0)
 
     def __str__(self):
         return str(self.id)

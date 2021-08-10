@@ -32,6 +32,7 @@ from resallocserver.logic import (
         QResources, QTickets, assign_ticket, release_resource
 )
 from resallocserver.config import CONFIG_DIR, CONFIG
+from resallocserver.priority_queue import PriorityQueue, PriorityQueueTask
 
 log = get_logger(__name__)
 
@@ -246,15 +247,27 @@ class AllocWorker(Worker):
             resource.state = RState.ENDED if output['status'] else RState.UP
             resource.data = output['stdout']
             tags = []
-            if type(self.pool.tags) != type([]):
+            if not isinstance(self.pool.tags, list):
                 msg = "Pool {pool} has set 'tags' set, but that's not an array"\
                         .format(pool=self.name)
                 warnings.warn(msg)
             else:
                 for tag in self.pool.tags:
+                    tag_name = None
+                    tag_priority = 0
+                    if isinstance(tag, str):
+                        # older format
+                        tag_name = tag
+                    elif isinstance(tag, dict):
+                        tag_name = tag['name']
+                        tag_priority = tag.get('priority', 0)
+                    else:
+                        assert False
+
                     tag_obj = models.ResourceTag()
-                    tag_obj.id = tag
+                    tag_obj.id = tag_name
                     tag_obj.resource_id = resource.id
+                    tag_obj.priority = tag_priority
                     tags.append(tag_obj)
 
             self.log.debug("Allocator ends with state={0}".format(resource.state))
@@ -550,6 +563,19 @@ class Pool(object):
                 TerminateWorker(event, self, int(res.id)).start()
 
 
+class PrioritizedResource(PriorityQueueTask):
+    """
+    Resource with priority (calculated from matching tasks).
+    """
+    def __init__(self, resource):
+        self.resource = resource
+
+    @property
+    def object_id(self):
+        """ Object_id from the resource id """
+        return self.resource.id
+
+
 class Manager(object):
     def __init__(self, sync):
         self.sync = sync
@@ -570,6 +596,8 @@ class Manager(object):
                 ticket = session.query(models.Ticket).get(ticket_id)
                 qres = QResources(session)
                 resources = qres.ready().all()
+
+                queue = PriorityQueue()
                 ticket_tags = ticket.tag_set
                 for resource in resources:
                     res_tags = resource.tag_set
@@ -578,13 +606,25 @@ class Manager(object):
                     if not ticket_tags.issubset(res_tags):
                         continue
 
-                    # We have found appropriate resource!
-                    log.debug("Assigning %s to %s", resource.name, ticket.id)
-                    assign_ticket(resource, ticket)
-                    if ticket.tid:
-                        notify_ticket = ticket.tid
-                    break
+                    priority = 0
+                    for tag in resource.tags:
+                        if tag.priority is not None and tag.id in ticket_tags:
+                            priority += tag.priority
 
+                    queue.add_task(resource, priority)
+
+                try:
+                    resource = queue.pop_task()
+                except KeyError:
+                    continue  # no available resource
+
+                # we found an appropriate resource
+                log.debug("Assigning %s to %s", resource.name, ticket.id)
+                assign_ticket(resource, ticket)
+                if ticket.tid:
+                    notify_ticket = ticket.tid
+
+            # notify ticket when the session is closed (to have short sessions)
             if notify_ticket:
                 self._notify_waiting(notify_ticket)
 

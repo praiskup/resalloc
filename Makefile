@@ -35,3 +35,11 @@ unittests:
 check:
 	@$(MAKE) unittests
 	@$(MAKE) shelltests
+
+ERDFILE = erd.png
+
+$(ERDFILE): ./resallocserver/models.py
+	export CONFIG_DIR=`pwd`/etc ; \
+	export PYTHONPATH=`pwd` ; \
+	python3 -c "from resallocserver.models import Base ; from eralchemy import render_er;  \
+		render_er(Base, '$@')"

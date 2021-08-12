@@ -26,6 +26,7 @@ class _WrappedXMLRPCClient(object):
             errno.ENETUNREACH,
             errno.ENETRESET,
             errno.ENETDOWN,
+            errno.EADDRNOTAVAIL,
         ]
 
     def call(self, name, *args):

@@ -1,7 +1,5 @@
-#!/usr/bin/env python
-
-# Resalloc server.
-# Copyright (C) 2017 Red Hat, Inc.
+# Resalloc server main() method (and friends).
+# Copyright (C) 2017-2021 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -120,7 +118,8 @@ def init_by_models():
         models.Base.metadata.create_all(session.get_bind())
 
 
-if __name__ == "__main__":
+def main():
+    """ module entrypoint """
     # Create the database, if not exist yet.
     init_by_alembic()
 

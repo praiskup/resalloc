@@ -29,11 +29,15 @@ class AppContext:
     Provide a singleton-like behavior for object attributes.  One needs to
     define instantiate_* methods.
     """
+    def __init__(self):
+        self._instantiated = {}
+
     # pylint: disable=missing-function-docstring
     def __getattr__(self, key):
         if key.startswith("instantiate_"):
             raise KeyError("Please define {} method in AppContext".format(key))
         setattr(self, key, getattr(self, "instantiate_{}".format(key))())
+        self._instantiated[key] = True
         return getattr(self, key)
 
     @staticmethod
@@ -49,6 +53,11 @@ class AppContext:
 
     def instantiate_session(self):
         return scoped_session(sessionmaker(bind=self.engine))
+
+    def reset(self):
+        for key in list(self._instantiated.keys()):
+            delattr(self, key)
+            del self._instantiated[key]
 
 app = AppContext()
 

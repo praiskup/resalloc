@@ -8,14 +8,14 @@ from logging.config import fileConfig
 # Alembic needs to know where to find the configuration.
 additional_path = os.path.dirname(os.path.abspath(__file__)) + "/../../"
 
-local_configdir = os.path.join(additional_path, "etc")
-if os.path.exists(local_configdir):
-    os.environ['CONFIG_DIR'] = local_configdir
+if "CONFIG_DIR" not in os.environ:
+    local_configdir = os.path.join(additional_path, "etc")
+    if os.path.exists(local_configdir):
+        os.environ['CONFIG_DIR'] = local_configdir
 
 sys.path = [additional_path] + sys.path
 
-from resallocserver.config import CONFIG
-from resallocserver.db import engine
+from resallocserver.app import app
 from resallocserver.models import Base
 
 # this is the Alembic Config object, which provides
@@ -50,7 +50,7 @@ def run_migrations_offline():
     script output.
 
     """
-    url = CONFIG['db_url']
+    url = app.config['db_url']
     context.configure(
         url=url, target_metadata=target_metadata, literal_binds=True,
         render_as_batch=True,
@@ -67,7 +67,7 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
-    connectable = engine
+    connectable = app.engine
     with connectable.connect() as connection:
         context.configure(
             connection=connection,

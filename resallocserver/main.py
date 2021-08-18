@@ -20,14 +20,11 @@ import time
 import threading
 
 from resalloc import helpers
-from resallocserver import db, models, api
-from resallocserver.config import CONFIG
+from resallocserver import models, api
+from resallocserver.app import app, session_scope
 from resallocserver.manager import Manager
 from resallocserver.logic import QResources
-from resallocserver.log import get_logger
 import alembic.config
-
-log = get_logger(__name__)
 
 PORT = 8000
 CLSXMLRPC = None
@@ -89,9 +86,10 @@ class Server(threading.Thread):
     server = None
 
     def run(self):
+        config = app.config
         # prefer "hostname" over "host", and fallback to "localhost"
-        hostname = CONFIG.get("hostname") or CONFIG.get("host") or "localhost"
-        self.server = CLSXMLRPC((hostname, CONFIG['port']))
+        hostname = config.get("hostname") or config.get("host") or "localhost"
+        self.server = CLSXMLRPC((hostname, config['port']))
         self.server.allow_none = True
         self.server.daemon_threads = True
         self.server.register_introspection_functions()
@@ -103,8 +101,8 @@ class Server(threading.Thread):
 
 
 def init_by_alembic():
-    log.debug("alembic init")
-    alembic_dir = os.path.dirname(db.__file__)
+    app.log.debug("alembic init")
+    alembic_dir = os.path.dirname(__file__)
     with helpers.pushd(alembic_dir):
         alembicArgs = [
         '--raiseerr',
@@ -114,7 +112,7 @@ def init_by_alembic():
 
 
 def init_by_models():
-    with db.session_scope() as session:
+    with session_scope() as session:
         models.Base.metadata.create_all(session.get_bind())
 
 
@@ -128,8 +126,8 @@ def main():
 
     # Delete leftovers from previous session, we need to run everything
     # asynchronously, see https://github.com/praiskup/resalloc/issues/41
-    with db.session_scope() as session:
-        QResources(session=session).fix_broken_after_restart(log)
+    with session_scope() as session:
+        QResources(session=session).fix_broken_after_restart(app.log)
 
     # Start server on background.
     server = Server()

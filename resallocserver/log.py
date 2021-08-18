@@ -17,14 +17,15 @@
 
 import os
 import logging
-from resallocserver.config import CONFIG
+from resallocserver.config import get_config
 
 def get_logger(loggername):
     if 'BUILD_MANPAGES_RUNNING' in os.environ:
         return None
     log = logging.getLogger(loggername)
-    loglevel = logging.getLevelName(CONFIG['loglevel'].upper())
-    logfile = os.path.join(CONFIG['logdir'], 'main.log')
+    config = get_config()
+    loglevel = logging.getLevelName(config['loglevel'].upper())
+    logfile = os.path.join(config['logdir'], 'main.log')
     log.setLevel(loglevel)
     file_formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s')

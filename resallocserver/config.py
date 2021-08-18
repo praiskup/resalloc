@@ -18,24 +18,29 @@
 import os
 from resalloc.helpers import merge_dict, load_config_file
 
-config_dir = "/etc/resallocserver"
-if 'CONFIG_DIR' in os.environ:
-    config_dir = os.environ['CONFIG_DIR']
 
-# Setup defaults.
-CONFIG = {
-    'db_url': 'sqlite:////var/lib/resalloc-server/db.sqlite',
-    'logdir': '/var/log/resallocserver',
-    # Bind the xmlrpc server to this hostname/port.
-    'hostname': 'localhost',
-    'port': 49100,
-    'loglevel': 'info',
-    # Maximum number of seconds Manager threads wait in loop.  Used for tests
-    # only ATM.  Watcher sleeps sleeptime/2.
-    'sleeptime': 20,
-}
+def get_config():
+    """
+    Get the resalloc-server configuration dict
+    """
 
-CONFIG_DIR = config_dir
+    config_dir = "/etc/resallocserver"
+    if 'CONFIG_DIR' in os.environ:
+        config_dir = os.environ['CONFIG_DIR']
 
-config_file = os.path.join(config_dir, 'server.yaml')
-CONFIG = merge_dict(CONFIG, load_config_file(config_file))
+    # Setup defaults.
+    config = {
+        'db_url': 'sqlite:////var/lib/resalloc-server/db.sqlite',
+        'logdir': '/var/log/resallocserver',
+        # Bind the xmlrpc server to this hostname/port.
+        'hostname': 'localhost',
+        'port': 49100,
+        'loglevel': 'info',
+        # Maximum number of seconds Manager threads wait in loop.  Used for tests
+        # only ATM.  Watcher sleeps sleeptime/2.
+        'sleeptime': 20,
+    }
+    config["config_dir"] = config_dir
+
+    config_file = os.path.join(config_dir, 'server.yaml')
+    return merge_dict(config, load_config_file(config_file))

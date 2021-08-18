@@ -21,7 +21,7 @@ import sys
 from resalloc.helpers import RState
 from resallocserver.logic import QResources, QTickets
 from resallocserver.models import Resource
-from resallocserver.db import session_scope
+from resallocserver.app import app, session_scope
 from resallocserver.log import get_logger
 
 log = get_logger(__name__)

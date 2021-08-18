@@ -26,19 +26,15 @@ import warnings
 from resalloc import helpers
 from resalloc.helpers import RState
 from resallocserver import models
-from resallocserver.db import session_scope
-from resallocserver.log import get_logger
+from resallocserver.app import session_scope, app
 from resallocserver.logic import (
         QResources, QTickets, assign_ticket, release_resource
 )
-from resallocserver.config import CONFIG_DIR, CONFIG
 from resallocserver.priority_queue import PriorityQueue, PriorityQueueTask
-
-log = get_logger(__name__)
 
 def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
                 catch_stdout_bytes=None, data=None):
-    log.debug("running: " + command)
+    app.log.debug("running: " + command)
     pfx = 'RESALLOC_'
     env = os.environ.copy()
     env[pfx + 'ID'] = str(res_id)
@@ -48,7 +44,9 @@ def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
     if data is not None:
         env[pfx + 'RESOURCE_DATA'] = base64.b64encode(data)
 
-    ldir = os.path.join(CONFIG['logdir'], 'hooks')
+    config = app.config
+
+    ldir = os.path.join(config['logdir'], 'hooks')
     try:
         os.mkdir(ldir)
     except OSError as e:
@@ -101,7 +99,8 @@ def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
 
 
 def reload_config():
-    config_file = os.path.join(CONFIG_DIR, "pools.yaml")
+    config_dir = app.config["config_dir"]
+    config_file = os.path.join(config_dir, "pools.yaml")
     config = helpers.load_config_file(config_file)
 
     pools = {}
@@ -146,7 +145,7 @@ class Worker(threading.Thread):
         return getattr(self.local, attr)
 
     def run(self):
-        self.log = log.getChild("worker")
+        self.log = app.log.getChild("worker")
         self.job()
 
 
@@ -283,7 +282,7 @@ class AllocWorker(Worker):
 
 class Watcher(threading.Thread):
     def loop(self):
-        log.debug("Watcher loop")
+        app.log.debug("Watcher loop")
         pools = reload_config()
         to_check = {}
         with session_scope() as session:
@@ -327,7 +326,7 @@ class Watcher(threading.Thread):
                 res.check_last_time = time.time()
                 if rc['status']:
                     res.check_failed_count = res.check_failed_count + 1
-                    log.debug("failed check #{0} for {1}"\
+                    app.log.debug("failed check #{0} for {1}"\
                             .format(res.check_failed_count, res_id))
                 else:
                     res.check_failed_count = 0
@@ -337,7 +336,7 @@ class Watcher(threading.Thread):
     def run(self):
         while True:
             self.loop()
-            time.sleep(CONFIG["sleeptime"] / 2)
+            time.sleep(app.config["sleeptime"] / 2)
 
 
 class Pool(object):
@@ -427,7 +426,7 @@ class Pool(object):
             pool_id = self._allocate_pool_id(session, resource)
             session.add(pool_id)
             session.flush()
-            log.debug("id in pool: {0}".format(pool_id.id))
+            app.log.debug("id in pool: {0}".format(pool_id.id))
 
             resource_id = resource.id
             fill_dict = dict(
@@ -458,7 +457,7 @@ class Pool(object):
                 continue
 
             if conf_type == dict:
-                setattr(self, key, merge_dict(local, data[key]))
+                setattr(self, key, helpers.merge_dict(local, data[key]))
             else:
                 setattr(self, key, data[key])
 
@@ -476,7 +475,7 @@ class Pool(object):
 
         is_too_soon = last_start + self.start_delay > time.time()
         if is_too_soon:
-            log.debug("too soon for Pool('{0}')".format(self.name))
+            app.log.debug("too soon for Pool('{0}')".format(self.name))
         return is_too_soon
 
     def _allocate_more_resources(self, event):
@@ -488,7 +487,7 @@ class Pool(object):
             msg = "=> POOL('{0}'):".format(self.name)
             for key, val in stats.items():
                 msg = msg + ' {0}={1}'.format(key,val)
-            log.debug(msg)
+            app.log.debug(msg)
 
             if stats['on'] >= self.max \
                    or stats['free'] + stats['start'] >= self.max_prealloc \
@@ -523,26 +522,27 @@ class Pool(object):
 
             for res in qres.check_failure_candidates():
                 if res.check_failed_count >= 3:
-                    log.debug("Removing %s, continuous failures", res.name)
+                    app.log.debug("Removing %s, continuous failures", res.name)
                     res.state = RState.DELETE_REQUEST
                     continue
 
             for res in qres.clean_candidates():
                 if not self.reuse_opportunity_time:
                     # reuse turned off by default, remove no matter what
-                    log.debug("Removing %s, not reusable", res.name)
+                    app.log.debug("Removing %s, not reusable", res.name)
                     res.state = RState.DELETE_REQUEST
                     continue
 
                 if res.released_at < (now - self.reuse_opportunity_time):
-                    log.debug("Removing %s, not taken quickly enough", res.name)
+                    app.log.debug("Removing %s, not taken quickly enough", res.name)
                     res.state = RState.DELETE_REQUEST
                     continue
 
                 if self.reuse_max_time:
                     last_allowed = now - self.reuse_max_time
                     if res.sandboxed_since < last_allowed:
-                        log.debug("Removing %s, too long in one sandbox, "
+                        app.log.debug(
+                                  "Removing %s, too long in one sandbox, "
                                   "since %s, last_allowed %s, now %s",
                                   res.name, res.sandboxed_since, last_allowed,
                                   now)
@@ -551,7 +551,7 @@ class Pool(object):
 
                 if self.reuse_max_count and \
                         res.releases_counter > self.reuse_max_count:
-                    log.debug("Removing %s, max reuses reached", res.name)
+                    app.log.debug("Removing %s, max reuses reached", res.name)
                     res.state = RState.DELETE_REQUEST
                     continue
 
@@ -619,7 +619,7 @@ class Manager(object):
                     continue  # no available resource
 
                 # we found an appropriate resource
-                log.debug("Assigning %s to %s", resource.name, ticket.id)
+                app.log.debug("Assigning %s to %s", resource.name, ticket.id)
                 assign_ticket(resource, ticket)
                 if ticket.tid:
                     notify_ticket = ticket.tid
@@ -630,7 +630,7 @@ class Manager(object):
 
 
     def _loop(self):
-        log.debug("Manager's loop.")
+        app.log.debug("Manager's loop.")
 
         # Cleanup the old resources.
         for _, pool in reload_config().items():
@@ -651,7 +651,7 @@ class Manager(object):
         self._loop()
         while True:
             # Wait for the request to set the event (or timeout).
-            self.sync.ticket.wait(timeout=CONFIG["sleeptime"])
+            self.sync.ticket.wait(timeout=app.config["sleeptime"])
             # Until the wait() is called again, any additional event.set() call
             # means another round (even though it might do nothing).
             self._loop()

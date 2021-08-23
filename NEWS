@@ -1,3 +1,11 @@
+New in v4:
+
+* New features:
+
+ - The resource (pool) tags can be specified with an integer priority value, and
+   resalloc then assigns the preallocated resources to tickets respecting the
+   priority (the resources with higher priority are assigned first).
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 New in 3.7:

@@ -72,8 +72,7 @@ class QResources(QObject):
         re-used first.
         """
         return (self.up().filter(models.Resource.ticket_id.is_(None))
-                         .filter(models.Resource.check_failed_count==0)
-                         .order_by(models.Resource.sandbox.is_(None)))
+                         .filter(models.Resource.check_failed_count==0))
 
     def taken(self):
         """

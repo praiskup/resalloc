@@ -62,6 +62,11 @@
 ##      #  - a user ticket asks for 'bar' and 'baz' tags,
 ##      # then Resalloc will prefer the resource B, because the score for their
 ##      # requested tags is 4 (3+1) (whilst the other is 1+2=3).
+##      # Re-used resources have additional score +500.  This normally means
+##      # that previously used resources (assigned to sandbox) are preferred
+##      # over the fresh resources (never used or assigned to sandbox, never
+##      # released).  So if any tag should beat this +500 rule, it's score needs
+##      # to be accordingly adjusted.
 ##      #
 ##      # This list accepts either dict values with tag-name/tag-priority
 ##      # fields, or string values (tag-name).

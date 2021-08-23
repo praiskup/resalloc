@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check out proper version of sources
+        uses: actions/checkout@v1
+
       - name: Submit the build
         env:
           COPR_PR_WEBHOOK: https://copr.fedorainfracloud.org/webhooks/custom/24190/c23f34c1-e02e-41a0-9435-6c7e4a6e56c0/resalloc/

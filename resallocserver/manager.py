@@ -32,6 +32,10 @@ from resallocserver.logic import (
 )
 from resallocserver.priority_queue import PriorityQueue, PriorityQueueTask
 
+
+REUSED_RESOURCE_PRIORITY = 500
+
+
 def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
                 catch_stdout_bytes=None, data=None):
     app.log.debug("running: " + command)
@@ -610,6 +614,12 @@ class Manager(object):
                     for tag in resource.tags:
                         if tag.priority is not None and tag.id in ticket_tags:
                             priority += tag.priority
+
+                    if resource.sandbox:
+                        # Re-used resources should be preferred to avoid
+                        # allocating new and new resources for the same
+                        # sandboxes.  TODO, make this configurable once needed.
+                        priority += REUSED_RESOURCE_PRIORITY
 
                     queue.add_task(resource, priority)
 

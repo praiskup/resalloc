@@ -1,3 +1,14 @@
+New in v4.1:
+
+* Bugfixes:
+
+  - Released resources were de-prioritized by the tag-priority feature
+    introduced in v4.  This was fixed, and released resources have again
+    higher priority over the non-released resources (with additional
+    score 500).
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v4:
 
 * New features:

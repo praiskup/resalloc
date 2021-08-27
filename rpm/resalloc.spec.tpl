@@ -14,7 +14,7 @@ the purposes of CI/CD tasks.
 
 %bcond_without check
 
-%if 0%{?fedora} || 0%{?rhel} > 7
+%if 0%{?fedora} || 0%{?rhel} > 7 || 0%{?is_opensuse}
 %bcond_with    python2
 %bcond_without python3
 %else
@@ -46,7 +46,11 @@ BuildRequires: python3-pytest-cov
 BuildRequires: python3-setuptools
 BuildRequires: python3-six
 BuildRequires: python3-sqlalchemy
+%if 0%{?is_opensuse}
+BuildRequires: python3-PyYAML
+%else
 BuildRequires: python3-yaml
+%endif
 %endif
 
 %if %{with python2}

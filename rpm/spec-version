@@ -2,9 +2,22 @@
 
 : "${PYTHON=python}"
 
+rootdir=$(readlink -f "$(pwd)"/..)
+
 TARBALL_VERSION=$(cd ..; $PYTHON setup.py --version)
 
-VERSION=$(git describe --tags)
+VERSION=$(git describe --tags 2>/dev/null) || {
+    # detect OBS environment
+    dirname=$(basename "$rootdir")
+    prefix=resalloc-git-0.git.
+    case $dirname in
+    "$prefix"*)
+        VERSION=$dirname
+        ;;
+    *)  echo "invalid dir $dirname"; exit 1 ;;
+    esac
+}
+
 case $VERSION in
     *-*)
         suffix=$(echo "$VERSION" | cut -d'-' -f2- | sed 's/-/_/g')

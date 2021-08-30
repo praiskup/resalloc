@@ -1,14 +1,16 @@
+PYTHON = python3
+
 project = resalloc
 
 tarball_version = \
 	cd .. ; \
-	python setup.py --version
+	$(PYTHON) setup.py --version
 
 project_version = ./spec-version
 
 generate_tarball = \
 	cd .. ; \
-	python setup.py sdist --dist-dir rpm
+	$(PYTHON) setup.py sdist --dist-dir rpm
 
 git_rev = \
 	rev="$$(git rev-parse HEAD)" ; \

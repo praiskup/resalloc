@@ -1,0 +1,61 @@
+#! /bin/bash -x
+
+show_help()
+{
+cat <<EOHELP >&2
+Usage: $0 OPTION
+
+Script to build resalloc in OBS
+EOHELP
+
+test -z "$1" || exit "$1"
+}
+
+# handle no arguments
+test ${#@} -eq 0 && show_help 1
+
+ARGS=$(getopt -o "" -l "outdir:" -n "getopt" -- "$@") \
+    || show_help 1
+
+# is that necessary -> should preserve whitespaces in option arguments
+# see: http://linuxwell.com/2011/07/14/getopt-in-bash/
+eval set -- "$ARGS"
+
+opt_outdir=
+
+# a ':' after 'a' means -> requires argumetn
+# the first ':' means 'silent' mode --> it has significantly different behaviour
+# when the ':' is not present
+while true; do
+    # now the name is in $1 and argument in $2
+    case $1 in
+    -a|--alpha)
+        echo "alfa!"
+        shift # shift at the end!
+        ;;
+
+    --gamma)
+        opt=${1##--}
+        opt=${opt##-}
+        opt=${opt//-/_}
+        eval "opt_$opt=:"
+        shift
+        ;;
+
+    --outdir)
+        opt=${1##--}
+        opt=${opt##-}
+        opt=${opt//-/_}
+        eval "opt_$opt=\$2"
+        shift 2
+        ;;
+
+    --) shift; break;;  # end
+    *) echo "programmer mistake ($1)" >&2; exit 1;;
+    esac
+done
+
+test -n "$opt_outdir" || exit 1
+cd "rpm" || exit 1
+make srpm
+bsdtar -xf *.src.rpm -C "$opt_outdir"

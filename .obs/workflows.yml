@@ -1,0 +1,6 @@
+---
+workflow:
+  steps:
+    - branch_package:
+        source_project: home:praiskup:resalloc
+        source_package: resalloc

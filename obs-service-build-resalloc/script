@@ -56,6 +56,10 @@ while true; do
 done
 
 test -n "$opt_outdir" || exit 1
-cd "rpm" || exit 1
+
+set -e
+bsdtar xf *.tar*
+rm *.tar* *.spec
+cd resalloc-*/rpm
 make srpm
 bsdtar -xf *.src.rpm -C "$opt_outdir"

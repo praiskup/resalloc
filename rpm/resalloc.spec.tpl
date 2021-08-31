@@ -48,6 +48,7 @@ BuildRequires: python3-six
 BuildRequires: python3-sqlalchemy
 %if 0%{?is_opensuse}
 BuildRequires: python3-PyYAML
+BuildRequires: cron
 %else
 BuildRequires: python3-yaml
 %endif

@@ -48,6 +48,9 @@ class Ticket(Base, TagMixin):
     tid = Column(String)
     sandbox = Column(String, nullable=True)
 
+    def __str__(self):
+        return "<Ticket #{0}>".format(self.id)
+
 
 class Resource(Base, TagMixin):
     __tablename__ = 'resources'

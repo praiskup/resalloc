@@ -601,6 +601,10 @@ class Manager(object):
                 qres = QResources(session)
                 resources = qres.ready().all()
 
+                if not resources:
+                    app.log.debug("No available resource, skipping %s", ticket)
+                    continue
+
                 queue = PriorityQueue()
                 ticket_tags = ticket.tag_set
                 for resource in resources:
@@ -626,7 +630,9 @@ class Manager(object):
                 try:
                     resource = queue.pop_task()
                 except KeyError:
-                    continue  # no available resource
+                    app.log.debug("%d resources UP but unusable for %s",
+                                  len(resources), ticket)
+                    continue
 
                 # we found an appropriate resource
                 app.log.debug("Assigning %s to %s", resource.name, ticket.id)

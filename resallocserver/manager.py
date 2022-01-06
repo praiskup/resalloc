@@ -191,6 +191,7 @@ class TerminateWorker(Worker):
                 id_in_pool,
                 self.pool.cmd_delete,
                 'terminate',
+                data=resource.data,
         )
         self.close()
 

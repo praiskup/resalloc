@@ -48,7 +48,7 @@ basic:
     max: $MAX
     max_prealloc: $PREALLOC
     cmd_new: "echo >&2 before; env | grep ^RESALLOC_; echo >&2 after"
-    cmd_delete: "echo >&2 stderr; echo stdout"
+    cmd_delete: "echo >&2 stderr; echo stdout; env | grep ^RESALLOC_"
     cmd_livecheck: "echo >&2 stderr; echo stdout"
     livecheck_period: 1
     tags:
@@ -207,6 +207,9 @@ grep -q stdout "$WORKDIR"/hooks/"$check_id"_terminate
 grep -q stderr "$WORKDIR"/hooks/"$check_id"_terminate
 grep -q stdout "$WORKDIR"/hooks/"$check_id"_watch
 grep -q stderr "$WORKDIR"/hooks/"$check_id"_watch
+
+info "check that terminate log contains RESALLOC_RESOURCE_DATA var"
+grep -q RESALLOC_RESOURCE_DATA= "$WORKDIR"/hooks/"$check_id"_terminate
 
 info "test force-delete of two resources"
 maint resource-delete 20 21

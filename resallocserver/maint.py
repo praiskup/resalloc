@@ -18,6 +18,7 @@
 import os
 import subprocess
 import sys
+from sqlalchemy.orm import Query
 
 from resalloc.helpers import RState
 from resallocserver.logic import QResources, QTickets
@@ -64,10 +65,18 @@ class Maintainer(object):
         hooks_dir = os.path.join(app.config["logdir"], "hooks")
         paths = []
         for resource in resources:
+            # If the resource was specified by its name instead of its ID
+            if not resource.isnumeric():
+                with session_scope() as session:
+                    query = Query(Resource)
+                    query = query.with_session(session)
+                    query = query.filter(Resource.name == resource)
+                    resource = query.one().id
+
             # We can't wildcard everything because then `tail' wouldn't
             # discover newly created log files
             suffixes = ["_alloc", "_watch", "_terminate"]
-            path = os.path.join(hooks_dir, resource.zfill(6))
+            path = os.path.join(hooks_dir, str(resource).zfill(6))
             paths.extend([path + suffix for suffix in suffixes])
 
         cmd = ["tail", "-F", "-n+0"] + paths

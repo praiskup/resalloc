@@ -41,6 +41,14 @@ parser_resource_delete.add_argument(
         help="The resource IDs",
         nargs='+')
 
+parser_resource_logs = subparsers.add_parser(
+    "resource-logs",
+    help="Print and follow logs for a resource")
+parser_resource_logs.add_argument(
+        "resource",
+        help="The resource IDs",
+        nargs='+')
+
 p_t_list = subparsers.add_parser(
         "ticket-list",
         help="List not-yet-closed tickets")
@@ -68,6 +76,9 @@ def main():
 
         elif 'resource-delete' in args.subparser:
             maint.resource_delete(args.resource)
+
+        elif 'resource-logs' in args.subparser:
+            maint.resource_logs(args.resource)
 
         elif 'ticket-list' in args.subparser:
             maint.ticket_list()

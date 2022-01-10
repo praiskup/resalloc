@@ -15,6 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import os
 import subprocess
 import sys
 
@@ -58,6 +59,19 @@ class Maintainer(object):
             with session_scope() as session:
                 resources = QResources(session=session)
                 resources.kill(res_id)
+
+    def resource_logs(self, resources=None):
+        hooks_dir = os.path.join(app.config["logdir"], "hooks")
+        paths = []
+        for resource in resources:
+            # We can't wildcard everything because then `tail' wouldn't
+            # discover newly created log files
+            suffixes = ["_alloc", "_watch", "_terminate"]
+            path = os.path.join(hooks_dir, resource.zfill(6))
+            paths.extend([path + suffix for suffix in suffixes])
+
+        cmd = ["tail", "-F", "-n+0"] + paths
+        subprocess.call(cmd)
 
     def ticket_list(self):
         with session_scope() as session:

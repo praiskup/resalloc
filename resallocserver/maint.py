@@ -18,6 +18,7 @@
 import os
 import subprocess
 import sys
+import json
 from sqlalchemy.orm import Query
 
 from resalloc.helpers import RState
@@ -50,6 +51,17 @@ class Maintainer(object):
                     releases=resource.releases_counter,
                     ticket=resource.ticket.id if resource.ticket else 'NULL',
                 ))
+
+    def resource_info(self, resource):
+        with session_scope() as session:
+            query = Query(Resource)
+            query = query.with_session(session)
+            if resource.isnumeric():
+                query = query.filter(Resource.id == resource)
+            else:
+                query = query.filter(Resource.name == resource)
+            resource = query.one()
+            print(json.dumps(resource.to_dict(), indent=4))
 
     def resource_delete(self, resources=None):
         if not resources or type(resources) != list:

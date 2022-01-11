@@ -30,6 +30,10 @@ class TagMixin(object):
     def tag_set(self):
         return set(map(str, self.tags))
 
+class Serializer:
+    def to_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
 
 class Pool(Base):
     __tablename__ = 'pools'
@@ -52,7 +56,7 @@ class Ticket(Base, TagMixin):
         return "<Ticket #{0}>".format(self.id)
 
 
-class Resource(Base, TagMixin):
+class Resource(Base, TagMixin, Serializer):
     __tablename__ = 'resources'
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=True)
@@ -93,6 +97,12 @@ class Resource(Base, TagMixin):
         if self.id_in_pool_object:
             return self.id_in_pool_object.id
         return None
+
+    def to_dict(self):
+        result = super().to_dict()
+        result["data"] = result["data"].decode("utf8").strip()
+        return result
+
 
 class IDWithinPool(Base):
     __tablename__ = 'ids_within_pool'

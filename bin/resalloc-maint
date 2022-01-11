@@ -33,6 +33,13 @@ p_list.add_argument(
         "--up", dest='up', action='store_true',
         help="List only ready-to-take resources")
 
+parser_resource_info = subparsers.add_parser(
+    "resource-info",
+    help="Print detailed information about a resource")
+parser_resource_info.add_argument(
+        "resource",
+        help="The resource IDs")
+
 parser_resource_delete = subparsers.add_parser(
         "resource-delete",
         help="Delete resource")
@@ -73,6 +80,9 @@ def main():
 
         if 'resource-list' in args.subparser:
             maint.resource_list(up=args.up)
+
+        elif 'resource-info' in args.subparser:
+            maint.resource_info(args.resource)
 
         elif 'resource-delete' in args.subparser:
             maint.resource_delete(args.resource)

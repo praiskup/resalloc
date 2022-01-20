@@ -63,15 +63,24 @@ class Maintainer(object):
             resource = query.one()
             print(json.dumps(resource.to_dict(), indent=4))
 
-    def resource_delete(self, resources=None):
+    def resource_delete(self, args):
+        resources = args.resource
+
+        with session_scope() as session:
+            qresources = QResources(session=session)
+            if args.all:
+                resources = [res.id for res in qresources.up()]
+            elif args.unused:
+                resources = [res.id for res in qresources.ready()]
+
         if not resources or type(resources) != list:
             log.error("no resources specified")
             return
 
         for res_id in resources:
             with session_scope() as session:
-                resources = QResources(session=session)
-                resources.kill(res_id)
+                qresources = QResources(session=session)
+                qresources.kill(res_id)
 
     def resource_logs(self, resources=None):
         hooks_dir = os.path.join(app.config["logdir"], "hooks")

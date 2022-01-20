@@ -1,3 +1,29 @@
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+New in v4.2:
+
+* New features:
+
+  - New 'resalloc-maint resource-logs' command printing out logs for
+    queried resources.  Accepts both resource ID and resource name.
+
+  - New 'resalloc-maint resource-info' command, priting out basic metadata
+    about the selected resource.
+
+  - Added new arguments '--all' and '--unused' for the 'resalloc-maint
+    resource-delete' command.
+
+
+* Bugfixes:
+
+  - RESALLOC_RESOURCE_DATA env var is given also to the 'cmd_delete' processes.
+
+  - Dump (debug) log entry giving user the with reason why concrete ticket
+    can not be resolved.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v4.1:
 
 * Bugfixes:

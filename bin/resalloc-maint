@@ -46,7 +46,17 @@ parser_resource_delete = subparsers.add_parser(
 parser_resource_delete.add_argument(
         "resource",
         help="The resource IDs",
-        nargs='+')
+        nargs='*')
+parser_resource_delete_group =\
+        parser_resource_delete.add_mutually_exclusive_group()
+parser_resource_delete_group.add_argument(
+        "--all",
+        help="Delete all resources",
+        action="store_true")
+parser_resource_delete_group.add_argument(
+        "--unused",
+        help="Delete all resources without any assigned ticket",
+        action="store_true")
 
 parser_resource_logs = subparsers.add_parser(
     "resource-logs",
@@ -85,7 +95,7 @@ def main():
             maint.resource_info(args.resource)
 
         elif 'resource-delete' in args.subparser:
-            maint.resource_delete(args.resource)
+            maint.resource_delete(args)
 
         elif 'resource-logs' in args.subparser:
             maint.resource_logs(args.resource)

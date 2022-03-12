@@ -100,7 +100,10 @@ class Resource(Base, TagMixin, Serializer):
 
     def to_dict(self):
         result = super().to_dict()
-        result["data"] = result["data"].decode("utf8").strip()
+        # Decode resource data for better readability
+        # Some resoures doesn't have any data, e.g. STARTING ones
+        if result["data"]:
+            result["data"] = result["data"].decode("utf8").strip()
         return result
 
 

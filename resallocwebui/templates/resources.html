@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resalloc resources</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='style.css') }}">
+</head>
+<body>
+    <h1 class="resource--title">Resalloc resources</h1>
+    <table class="table">
+        <thead class="thead-dark">
+        <tr>
+            <th scope="col">Pool</th>
+            <th scope="col">Max</th>
+            <th scope="col">Available</th>
+            <th scope="col">Up</th>
+            <th scope="col">Starting</th>
+            <th scope="col">Deleting</th>
+            <th scope="col">Releasing</th>
+            <th scope="col">Ended</th>
+            <th scope="col">Taken</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for resource, info in information.items() %}
+        <tr>
+            <th scope="row">{{ resource }}</th>
+            <td>{{ info.max }}</td>
+            <td>{{ info.available }}</td>
+            <td>{{ info.status['UP'] }}</td>
+            <td>{{ info.status['STARTING'] }}</td>
+            <td>{{ info.status['DELETING'] }}</td>
+            <td>{{ info.status['RELEASING'] }}</td>
+            <td>{{ info.status['ENDED'] }}</td>
+            <td>{{ info.status['TAKEN'] }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</body>

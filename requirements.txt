@@ -2,3 +2,4 @@ alembic
 pyyaml
 six
 sqlalchemy
+flask

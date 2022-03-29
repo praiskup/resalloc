@@ -106,6 +106,22 @@ Requires(pre): /usr/sbin/useradd
 The %name-server package provides the resalloc server, and
 some tooling for resalloc administrators.
 
+%if %{with python3}
+%package webui
+Summary:    %sum - webui part
+
+%if %{with python3}
+Requires:   %default_python-%srcname = %version-%release
+Requires: %name-server
+Requires: python3-flask
+%endif
+
+%description webui
+%desc
+
+The %name-webui package provides the resalloc webui,
+it shows page with information about resalloc resources.
+%endif
 
 %if %{with python3}
 %package -n python3-%srcname
@@ -154,6 +170,7 @@ mkdir -p %buildroot%_unitdir
 mkdir -p %buildroot%_logdir
 install -p -m 644 %SOURCE1 %buildroot%_unitdir
 install -d -m 700 %buildroot%_homedir
+install -d -m 700 %buildroot/%{name}webui
 install -d -m 700 %buildroot%_sysconfdir/logrotate.d
 install -p -m 644 %SOURCE2 %buildroot%_sysconfdir/logrotate.d/resalloc-server
 install -p -m 644 man/resalloc-server.1 %buildroot%_mandir/man1
@@ -239,6 +256,12 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 %_libexecdir/resalloc-merge-hook-logs
 %config %attr(0755, root, root) %{_sysconfdir}/cron.hourly/resalloc
 
+%if %{with python3}
+%files webui
+%doc %doc_files
+%license COPYING
+%{default_sitelib}/%{name}webui
+%endif
 
 %changelog
 * Fri Aug 02 2019 Pavel Raiskup <praiskup@redhat.com> - 2.6-1

@@ -162,6 +162,7 @@ to the resalloc server.
 %install
 %if %{with python2}
 %py2_install
+rm -r %buildroot%python2_sitelib/%{name}webui
 %else
 %py3_install
 %endif

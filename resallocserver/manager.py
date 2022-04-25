@@ -204,6 +204,8 @@ class ReleaseWorker(Worker):
             id_in_pool = resource.id_in_pool
             session.expunge(resource)
 
+        self.log.debug("Releasing worker: pool=%s name=%s",
+                       self.pool.name, resource.name)
         out = run_command(self.pool.id, resource.id, resource.name, id_in_pool,
                           self.pool.cmd_release, "release", data=resource.data)
         status = out["status"]
@@ -211,8 +213,14 @@ class ReleaseWorker(Worker):
         with session_scope() as session:
             resource = session.query(models.Resource).get(self.resource_id)
             if status:
+                self.log.debug("Releasing worker failed: pool=%s name=%s cmd=%s",
+                               self.pool.name, resource.name,
+                               self.pool.cmd_release)
                 # mark it for removal
                 resource.releases_counter = self.pool.reuse_max_count + 1
+            else:
+                self.log.debug("Worker released: pool=%s name=%s",
+                               self.pool.name, resource.name)
             resource.state = RState.UP
 
         if not status:

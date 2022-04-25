@@ -150,7 +150,12 @@ class Worker(threading.Thread):
 
     def run(self):
         self.log = app.log.getChild("worker")
-        self.job()
+        try:
+            self.job()
+        except:
+            self.log.exception("Worker exception, pool=%s resource=%s",
+                               self.pool, self.resource_id)
+            raise
 
 
 class TerminateWorker(Worker):

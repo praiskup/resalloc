@@ -4,8 +4,11 @@ from resallocserver.app import session_scope
 from resallocserver.app import app as application
 from resalloc.helpers import load_config_file
 from resallocserver import models
+from resallocwebui import static_folder
 
-app = Flask(__name__)
+tmpl_dir = os.path.join(static_folder, "templates")
+app = Flask(__name__, template_folder=tmpl_dir)
+app.static_folder = os.path.join(static_folder, "static")
 
 
 @app.route('/resources')

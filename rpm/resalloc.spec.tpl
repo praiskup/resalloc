@@ -165,13 +165,15 @@ to the resalloc server.
 rm -r %buildroot%python2_sitelib/%{name}webui
 %else
 %py3_install
+install -d -m 700 %buildroot%_datadir/%{name}webui
+cp -r %{name}webui/templates %buildroot%_datadir/%{name}webui/
+cp -r %{name}webui/static %buildroot%_datadir/%{name}webui/
 %endif
 
 mkdir -p %buildroot%_unitdir
 mkdir -p %buildroot%_logdir
 install -p -m 644 %SOURCE1 %buildroot%_unitdir
 install -d -m 700 %buildroot%_homedir
-install -d -m 700 %buildroot/%{name}webui
 install -d -m 700 %buildroot%_sysconfdir/logrotate.d
 install -p -m 644 %SOURCE2 %buildroot%_sysconfdir/logrotate.d/resalloc-server
 install -p -m 644 man/resalloc-server.1 %buildroot%_mandir/man1
@@ -261,7 +263,8 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 %files webui
 %doc %doc_files
 %license COPYING
-%{default_sitelib}/%{name}webui
+%{default_sitelib}/%{name}webui/
+%_datadir/%{name}webui/
 %endif
 
 %changelog

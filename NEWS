@@ -1,5 +1,18 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v4.3:
+
+* New features:
+
+  - new Flask-based Python "overview" web-ui page added, providing basic
+    info about used Pools
+
+  - Fixed up 'resource-info' command for "STARTING" resources
+
+  - More verbose RELEASING logging output to simplify debugging when needed
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v4.2:
 
 * New features:

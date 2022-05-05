@@ -1,18 +1,22 @@
 """
 Client resalloc Python API.
 """
+from __future__ import print_function
 
 import errno
 import socket
 import time
+import sys
 
 try:
     import xmlrpclib
     C_XMLRPC = xmlrpclib.ServerProxy
+    RPCEXCEPTION = xmlrpclib.Error
 except ImportError:
     # pylint: disable=invalid-name
     import xmlrpc.client
     C_XMLRPC = xmlrpc.client.ServerProxy
+    RPCEXCEPTION = xmlrpc.client.Error
 
 
 class _WrappedXMLRPCClient(object):
@@ -44,6 +48,8 @@ class _WrappedXMLRPCClient(object):
                     raise
                 if os_e.errno not in self._retry_errors:
                     raise
+            except RPCEXCEPTION as ex:
+                print(str(ex), file=sys.stderr)
             time.sleep(3)
 
 

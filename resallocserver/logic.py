@@ -138,6 +138,16 @@ class QResources(QObject):
             .filter(models.Resource.check_failed_count > 0)
         )
 
+    def check_failure_candidates_with_ticket(self):
+        """
+        List of resources that are UP, and have non-zero check_failed_count.
+        """
+        return (
+            self.up()
+            # isn't it still used?
+            .filter(models.Resource.check_failed_count > 10)
+        )
+
     def clean(self):
         return self.on().filter_by(state=RState.DELETE_REQUEST)
 

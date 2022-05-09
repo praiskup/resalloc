@@ -24,7 +24,7 @@ import threading
 import subprocess
 import warnings
 from resalloc import helpers
-from resalloc.helpers import RState
+from resalloc.helpers import RState, TState
 from resallocserver import models
 from resallocserver.app import session_scope, app
 from resallocserver.logic import (
@@ -543,6 +543,12 @@ class Pool(object):
                     app.log.debug("Removing %s, continuous failures", res.name)
                     res.state = RState.DELETE_REQUEST
                     continue
+
+            for res in qres.check_failure_candidates_with_ticket():
+                session.query(models.Ticket).filter_by(id=res.ticket.id).update({'state': TState.FAILED})
+                app.log.debug("Removing %s, failure checks exceeded the limit of 10 checks", res.name)
+                res.state = RState.DELETE_REQUEST
+                continue
 
             for res in qres.clean_candidates():
                 if not self.reuse_opportunity_time:

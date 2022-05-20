@@ -165,7 +165,7 @@ to the resalloc server.
 rm -r %buildroot%python2_sitelib/%{name}webui
 %else
 %py3_install
-install -d -m 700 %buildroot%_datadir/%{name}webui
+install -d -m 755 %buildroot%_datadir/%{name}webui
 cp -r %{name}webui/templates %buildroot%_datadir/%{name}webui/
 cp -r %{name}webui/static %buildroot%_datadir/%{name}webui/
 %endif

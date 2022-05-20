@@ -11,6 +11,11 @@ app = Flask(__name__, template_folder=tmpl_dir)
 app.static_folder = os.path.join(static_folder, "static")
 
 
+@app.route("/")
+def home():
+    return "OK"
+
+
 @app.route('/resources')
 def resources():
     with session_scope() as session:

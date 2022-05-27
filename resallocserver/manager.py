@@ -36,9 +36,8 @@ from resallocserver.priority_queue import PriorityQueue, PriorityQueueTask
 REUSED_RESOURCE_PRIORITY = 500
 
 
-def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
-                catch_stdout_bytes=None, data=None):
-    app.log.debug("running: " + command)
+def command_env(pool_id=None, res_id=None, res_name=None,
+                id_in_pool=None, data=None):
     pfx = 'RESALLOC_'
     env = os.environ.copy()
     env[pfx + 'ID'] = str(res_id)
@@ -47,7 +46,13 @@ def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
     env[pfx + 'ID_IN_POOL'] = str(id_in_pool)
     if data is not None:
         env[pfx + 'RESOURCE_DATA'] = base64.b64encode(data)
+    return env
 
+
+def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
+                catch_stdout_bytes=None, data=None):
+    app.log.debug("running: " + command)
+    env = command_env(pool_id, res_id, res_name, id_in_pool, data)
     config = app.config
 
     ldir = os.path.join(config['logdir'], 'hooks')
@@ -298,6 +303,58 @@ class AllocWorker(Worker):
         self.event.set()
 
 
+class CleanUnknownWorker(Worker):
+    """
+    Delete all resources that are not recognized by resalloc
+    https://github.com/praiskup/resalloc/issues/88
+    """
+    def job(self):
+        if not self.pool.cmd_list:
+            return
+
+        all_resources = self._list_all_resources()
+        known_resources = self._list_known_resources()
+        unknown_resources = set(all_resources) - set(known_resources)
+
+        # There is no assigned resource ID for the given resource, that's
+        # the whole point. Let's simply use 0, which means the termination
+        # output for all unknown resources will be logged into
+        # hooks/000000_terminate
+        res_id=0
+
+        for resource in unknown_resources:
+            run_command(
+                self.pool.id,
+                res_id,
+                resource,
+                None,
+                self.pool.cmd_delete,
+                'terminate',
+                data=None,
+            )
+
+    def _list_all_resources(self):
+        """
+        List all resources using `cmd_list` from `pools.yaml`. This may include
+        resources that are not known to resalloc
+        """
+        result = run_command(
+            self.pool.id,
+            res_id=0,
+            res_name=None,
+            id_in_pool=None,
+            command=self.pool.cmd_list,
+            ltype="list",
+            catch_stdout_bytes=512,
+        )
+        return result["stdout"].decode("utf-8").strip().split("\n")
+
+    def _list_known_resources(self):
+        with session_scope() as session:
+            on = QResources(session).up().all()
+            return [resource.name for resource in on]
+
+
 class Watcher(threading.Thread):
     def loop(self):
         app.log.debug("Watcher loop")
@@ -370,6 +427,7 @@ class Pool(object):
     cmd_delete = None
     cmd_livecheck = None
     cmd_release = None
+    cmd_list = None
     livecheck_period = 600
     tags = None
     name_pattern = "{pool_name}_{id}_{datetime}"
@@ -401,6 +459,9 @@ class Pool(object):
         self._garbage_collector(event)
 
         self._allocate_more_resources(event)
+
+        # Delete all resources that are not recognized by resalloc
+        self._clean_unknown_resources(event)
 
 
     def validate(self):
@@ -515,6 +576,10 @@ class Pool(object):
                 break
 
             self.allocate(event)
+
+    def _clean_unknown_resources(self, event):
+        worker = CleanUnknownWorker(event, self, res_id=None)
+        worker.run()
 
     def _detect_closed_tickets(self, event):
         with session_scope() as session:

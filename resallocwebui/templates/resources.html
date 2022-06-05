@@ -13,29 +13,27 @@
     <table class="table">
         <thead class="thead-dark">
         <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Name</th>
             <th scope="col">Pool</th>
-            <th scope="col">Max</th>
-            <th scope="col">Available</th>
-            <th scope="col">Up</th>
-            <th scope="col">Starting</th>
-            <th scope="col">Deleting</th>
-            <th scope="col">Releasing</th>
-            <th scope="col">Ended</th>
-            <th scope="col">Taken</th>
+            <th scope="col">State</th>
+            <th scope="col">Ticket</th>
+            <th scope="col">User</th>
+            <th scope="col">Sandbox</th>
+            <th scope="col">Data</th>
         </tr>
         </thead>
         <tbody>
-        {% for resource, info in information.items() %}
+        {% for resource in resources %}
         <tr>
-            <th scope="row">{{ resource }}</th>
-            <td>{{ info.max }}</td>
-            <td>{{ info.available }}</td>
-            <td>{{ info.status['UP'] }}</td>
-            <td>{{ info.status['STARTING'] }}</td>
-            <td>{{ info.status['DELETING'] }}</td>
-            <td>{{ info.status['RELEASING'] }}</td>
-            <td>{{ info.status['ENDED'] }}</td>
-            <td>{{ info.status['TAKEN'] }}</td>
+            <th scope="row">{{ resource.id }}</th>
+            <td>{{ resource.name }}</td>
+            <td>{{ resource.pool }}</td>
+            <td>{{ resource.state }}</td>
+            <td>{{ resource.ticket_id }}</td>
+            <td>{{ resource.user }}</td>
+            <td>{{ resource.sandbox }}</td>
+            <td>{{ resource.to_dict()["data"] }}</td>
         </tr>
         {% endfor %}
         </tbody>

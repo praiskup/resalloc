@@ -106,6 +106,10 @@ class Resource(Base, TagMixin, Serializer):
             result["data"] = result["data"].decode("utf8").strip()
         return result
 
+    @property
+    def taken(self):
+        return self.ticket_id != None
+
 
 class IDWithinPool(Base):
     __tablename__ = 'ids_within_pool'

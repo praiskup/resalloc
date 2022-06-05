@@ -23,6 +23,7 @@ import time
 import threading
 import subprocess
 import warnings
+from datetime import datetime
 from resalloc import helpers
 from resalloc.helpers import RState
 from resallocserver import models
@@ -578,8 +579,23 @@ class Pool(object):
             self.allocate(event)
 
     def _clean_unknown_resources(self, event):
+        with session_scope() as session:
+            dbinfo = session.query(models.Pool).get(self.name)
+            last_cleanup = dbinfo.cleaning_unknown_resources
+
+        delta = datetime.now() - last_cleanup
+        minutes = delta.seconds / 60
+
+        # We don't want to clean up that often
+        if minutes < 30:
+            return
+
         worker = CleanUnknownWorker(event, self, res_id=None)
         worker.run()
+
+        with session_scope() as session:
+            dbinfo.cleaning_unknown_resources = datetime.now()
+            session.add(dbinfo)
 
     def _detect_closed_tickets(self, event):
         with session_scope() as session:

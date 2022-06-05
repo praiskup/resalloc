@@ -39,6 +39,7 @@ class Pool(Base):
     __tablename__ = 'pools'
     name = Column(String, primary_key=True)
     last_start = Column(Float, default=0)
+    cleaning_unknown_resources = Column(DateTime, server_default=func.now())
 
 
 class Ticket(Base, TagMixin):

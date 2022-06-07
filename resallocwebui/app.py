@@ -4,11 +4,11 @@ from resallocserver.app import session_scope
 from resallocserver.logic import QResources
 from resalloc.helpers import RState
 from resallocserver import models
-from resallocwebui import static_folder
+from resallocwebui import staticdir, templatedir
 
-tmpl_dir = os.path.join(static_folder, "templates")
-app = Flask(__name__, template_folder=tmpl_dir)
-app.static_folder = os.path.join(static_folder, "static")
+
+app = Flask(__name__, template_folder=templatedir)
+app.static_folder = staticdir
 
 
 @app.route("/")

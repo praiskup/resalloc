@@ -310,8 +310,7 @@ class CleanUnknownWorker(Worker):
     https://github.com/praiskup/resalloc/issues/88
     """
     def job(self):
-        if not self.pool.cmd_list:
-            return
+        self.log.debug("Cleaning unused resources in %s pool", self.pool.id)
 
         all_resources = self._list_all_resources()
         known_resources = self._list_known_resources()
@@ -579,6 +578,9 @@ class Pool(object):
             self.allocate(event)
 
     def _clean_unknown_resources(self, event):
+        if not self.cmd_list:
+            return
+
         with session_scope() as session:
             dbinfo = session.query(models.Pool).get(self.name)
             last_cleanup = dbinfo.cleaning_unknown_resources

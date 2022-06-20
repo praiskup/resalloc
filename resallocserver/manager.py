@@ -213,29 +213,31 @@ class ReleaseWorker(Worker):
         with session_scope() as session:
             resource = session.query(models.Resource).get(self.resource_id)
             id_in_pool = resource.id_in_pool
+            resource_name = resource.name
             session.expunge(resource)
 
         self.log.debug("Releasing worker: pool=%s name=%s",
-                       self.pool.name, resource.name)
-        out = run_command(self.pool.id, resource.id, resource.name, id_in_pool,
+                       self.pool.name, resource_name)
+        out = run_command(self.pool.id, resource.id, resource_name, id_in_pool,
                           self.pool.cmd_release, "release", data=resource.data)
         status = out["status"]
 
         with session_scope() as session:
-            resource = session.query(models.Resource).get(self.resource_id)
+            # re-query the expunged resource
+            mod_resource = session.query(models.Resource).get(self.resource_id)
             if status:
                 self.log.debug("Releasing worker failed: pool=%s name=%s cmd=%s",
-                               self.pool.name, resource.name,
+                               self.pool.name, resource_name,
                                self.pool.cmd_release)
                 # mark it for removal
-                resource.releases_counter = self.pool.reuse_max_count + 1
-            else:
-                self.log.debug("Worker released: pool=%s name=%s",
-                               self.pool.name, resource.name)
-            resource.state = RState.UP
+                mod_resource.releases_counter = self.pool.reuse_max_count + 1
+            mod_resource.state = RState.UP
 
         if not status:
             self.event.set()
+
+        self.log.debug("Ended releasing: pool=%s name=%s",
+                       self.pool.name, resource_name)
 
 
 class AllocWorker(Worker):

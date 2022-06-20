@@ -584,9 +584,11 @@ class Pool(object):
         with session_scope() as session:
             dbinfo = session.query(models.Pool).get(self.name)
             last_cleanup = dbinfo.cleaning_unknown_resources
+            if last_cleanup is None:
+                last_cleanup = datetime.min
 
         delta = datetime.now() - last_cleanup
-        minutes = delta.seconds / 60
+        minutes = delta.total_seconds() / 60
 
         # We don't want to clean up that often
         if minutes < 30:

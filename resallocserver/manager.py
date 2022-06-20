@@ -598,6 +598,8 @@ class Pool(object):
             session.add(dbinfo)
 
     def _detect_closed_tickets(self, event):
+        close_resources = []
+
         with session_scope() as session:
             qres = QResources(session, pool=self.name)
 
@@ -612,7 +614,15 @@ class Pool(object):
                         # the resource is not releasable anymore (max_reuses
                         # reached, etc.).
                         resource.state = helpers.RState.RELEASING
-                        ReleaseWorker(event, self, int(resource.id)).start()
+                        close_resources.append(int(resource.id))
+
+        # We need to call this after the session_scope() above, because the
+        # ReleaseWorker itself modifies the Resource records in DB concurrently.
+        # Relates:
+        # https://pagure.io/copr/copr/issue/2083
+        # https://github.com/praiskup/resalloc/pull/87
+        for resource_id in close_resources:
+            ReleaseWorker(event, self, resource_id).start()
 
     def _request_resource_removal(self):
         with session_scope() as session:

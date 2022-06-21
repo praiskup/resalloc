@@ -51,7 +51,8 @@ def command_env(pool_id=None, res_id=None, res_name=None,
 
 
 def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
-                catch_stdout_bytes=None, data=None):
+                catch_stdout_bytes=None, data=None,
+                catch_stdout_lines_securely=False):
     app.log.debug("running: " + command)
     env = command_env(pool_id, res_id, res_name, id_in_pool, data)
     config = app.config
@@ -89,13 +90,15 @@ def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
                 continue
 
             if stdout_written + len(line) > catch_stdout_bytes:
-                if stdout_written == 0:
-                    # If nothing was written, write at least part of the stdout
+                if stdout_written == 0 and not catch_stdout_lines_securely:
+                    # Even the first line is too long for this buffer.  Catch at
+                    # least part of it.
                     line = line[:catch_stdout_bytes]
                     captured_string += line
 
                 stdout_stopped = True
-                captured_string += b"<< trimmed >>\n"
+                if not catch_stdout_lines_securely:
+                    captured_string += b"<< trimmed >>\n"
                 continue
 
             stdout_written += len(line)
@@ -347,7 +350,8 @@ class CleanUnknownWorker(Worker):
             id_in_pool=None,
             command=self.pool.cmd_list,
             ltype="list",
-            catch_stdout_bytes=512,
+            catch_stdout_bytes=5120,
+            catch_stdout_lines_securely=True,
         )
         return result["stdout"].decode("utf-8").strip().split()
 

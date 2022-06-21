@@ -349,7 +349,7 @@ class CleanUnknownWorker(Worker):
             ltype="list",
             catch_stdout_bytes=512,
         )
-        return result["stdout"].decode("utf-8").strip().split("\n")
+        return result["stdout"].decode("utf-8").strip().split()
 
     def _list_known_resources(self):
         with session_scope() as session:

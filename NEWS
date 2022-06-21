@@ -1,5 +1,27 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v4.4:
+
+* New features:
+
+  - Server now periodically checks for unknown or forgotten resources. This is
+    useful when your termination scripts are not reliable, and report successful
+    termination even if the resource somehow survives. Enable this feature by
+    configuring 'cmd_list' option for the respective pools.
+
+  - Major performance and other improvements to the web-ui pools page
+
+  - New web-ui page providing basic information about resources
+
+
+* Bugfixes:
+
+  - Connection to resalloc occasionally ended up with uncaught xmlrpc exception
+
+  - Fixed race-condition causing infinitely RELEASING resource
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v4.3:
 
 * New features:

@@ -48,6 +48,18 @@
 ##      # TODO: The atomicity specification needs to be polished.
 ##      cmd_delete: "/bin/terminate-vm"
 ##
+##      # Periodically check the pool for unknown or forgotten resources.  The
+##      # command specified here must list all the existing resources (names)
+##      # available in the pool and print them on standard output.  When this
+##      # option is used, resalloc server will attempt to remove every resource
+##      # listed that is not anymore tracked in the Resalloc server database.
+##      # This option is useful for unreliable termination scripts — e.g.
+##      # Resalloc server "normally" attempted to remove the resource, the
+##      # script reported success so the resource was marked as "ENDED" in
+##      # database, but still — in reality the resource survived the
+##      # termination.  This option is the last resort for removal.
+##      cmd_list: /bin/list-libvirt-machines-in-pool
+##
 ##      # List of tags all resources coming from this pool will have.  Based on
 ##      # these tags, resources are assigned to user's tickets.  Different pools
 ##      # can provide the same kind of resources (same tags).   To prefer

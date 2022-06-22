@@ -11,3 +11,4 @@ recursive-include test-tooling resalloc* wrap
 recursive-include build_manpages/build_manpages *.py
 recursive-include resallocwebui/static *.css
 recursive-include resallocwebui/templates *.html
+include resallocwebui/cgi-resalloc

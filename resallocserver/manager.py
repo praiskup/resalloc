@@ -597,7 +597,7 @@ class Pool(object):
             return
 
         worker = CleanUnknownWorker(event, self, res_id=None)
-        worker.run()
+        worker.start()
 
         with session_scope() as session:
             dbinfo.cleaning_unknown_resources = datetime.now()

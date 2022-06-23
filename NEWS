@@ -1,5 +1,16 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v4.5:
+
+* Bugfixes:
+
+  - added a forgotten CGI script for the web UI subpackage
+
+  - now we are running the "orphaned resources" cleaner in background, this
+    blocked the manager logic before
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v4.4:
 
 * New features:

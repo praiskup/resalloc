@@ -1,4 +1,11 @@
 #!/usr/bin/python3
 from wsgiref.handlers import CGIHandler
-from resallocwebui.app import app
-CGIHandler().run(app)
+from resallocwebui.app import app as application
+
+
+# Apache only imports `application` from this file and does the rest.
+# Lighttpd, on the other hand, executes this file as a script. Therefore we
+# need to run the `CGIHandler` here manually.
+
+if __name__ == "__main__":
+    CGIHandler().run(application)

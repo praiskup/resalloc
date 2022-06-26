@@ -114,6 +114,7 @@ Summary:    %sum - webui part
 Requires:   %default_python-%srcname = %version-%release
 Requires: %name-server
 Requires: python3-flask
+Recommends: %name-selinux
 %endif
 
 %description webui
@@ -145,6 +146,22 @@ Summary: %sum - Python 2 client library
 The python2-%name package provides Python 2 client library for talking
 to the resalloc server.
 %endif
+
+
+%package selinux
+Summary: SELinux module for %{name}
+Requires: %name-webui = %version-%release
+# Requires(post): policycoreutils-python
+BuildRequires: selinux-policy-devel
+%{?selinux_requires}
+
+%description selinux
+%desc
+
+%post selinux
+semanage fcontext -a -t httpd_sys_script_exec_t \
+    %_var/www/cgi-%{name} 2>/dev/null || :
+restorecon -R %_var/www/cgi-%{name} || :
 
 
 %prep
@@ -270,6 +287,9 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 %_datadir/%{name}webui/
 %_var/www/cgi-%{name}
 %endif
+
+%files selinux
+
 
 %changelog
 * Fri Aug 02 2019 Pavel Raiskup <praiskup@redhat.com> - 2.6-1

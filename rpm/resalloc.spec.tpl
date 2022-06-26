@@ -170,7 +170,7 @@ cp -r %{name}webui/templates %buildroot%_datadir/%{name}webui/
 cp -r %{name}webui/static %buildroot%_datadir/%{name}webui/
 
 install -d -m 755 %buildroot%_var/www/
-cp -r %{name}webui/cgi-resalloc %buildroot%_var/www/cgi-%{name}
+install -p -m 755 %{name}webui/cgi-resalloc %buildroot%_var/www/cgi-%{name}
 %endif
 
 mkdir -p %buildroot%_unitdir

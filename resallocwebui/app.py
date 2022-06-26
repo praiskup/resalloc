@@ -13,7 +13,7 @@ app.static_folder = staticdir
 
 @app.route("/")
 def home():
-    return "OK"
+    return render_template("home.html", resources=resources)
 
 
 @app.route('/resources')

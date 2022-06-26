@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+
+
+{% block title %}
+Resalloc resources
+{% endblock %}
+
+
+{% block content %}
+<h1>Resalloc</h1>
+<ul>
+    <li>
+        <a href="{{ url_for('pools') }}">Pools</a>
+        - Statistics about available pools
+    </li>
+    <li>
+        <a href="{{ url_for('resources') }}">Resources</a>
+        - List of all available resources and who is using them
+    </li>
+</ul>
+{% endblock %}

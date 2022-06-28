@@ -2,8 +2,8 @@ import os
 from flask import Flask, render_template
 from resallocserver.app import session_scope
 from resallocserver.logic import QResources
+from resallocserver.manager import reload_config
 from resalloc.helpers import RState
-from resallocserver import models
 from resallocwebui import staticdir, templatedir
 
 
@@ -37,11 +37,15 @@ def pools():
     # e.g. result["copr_hv_x86_64_01_prod"]["STARTING"]
     result = {}
 
-    with session_scope() as session:
-        # Prepare the two-dimensional array, and fill it with zeros
-        for pool in session.query(models.Pool):
-            result[pool.name] = dict.fromkeys(columns, 0)
+    # Read configuration from pools.yaml
+    pools_config = reload_config()
 
+    # Prepare the two-dimensional array, and fill it with zeros
+    for name, pool in pools_config.items():
+        result[name] = dict.fromkeys(columns, 0)
+        result[name]["MAX"] = pools_config[name].max
+
+    with session_scope() as session:
         # Iterate over running resources and calculate how many is starting,
         # deleting, etc.
         qresources = QResources(session=session)

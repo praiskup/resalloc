@@ -12,6 +12,7 @@ Resalloc pools
     <thead class="thead-dark">
     <tr>
         <th scope="col">Pool</th>
+        <th scope="col">Max</th>
         <th scope="col">Up</th>
         <th scope="col">Ready</th>
         <th scope="col">Taken</th>
@@ -24,6 +25,7 @@ Resalloc pools
     {% for pool, info in information.items() %}
     <tr>
         <th scope="row">{{ pool }}</th>
+        <td>{{ info['MAX'] }}</td>
         <td>{{ info['UP'] }}</td>
         <td>{{ info['READY'] }}</td>
         <td>{{ info['TAKEN'] }}</td>

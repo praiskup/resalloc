@@ -1,5 +1,20 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v4.6:
+
+* New features:
+
+  - A new resalloc-selinux subpackage, currently adjusting only SELinux context
+    for the CGI script used by WebUI
+  - Adding a simple homepage for the WebUI
+
+
+* Bugfixes:
+
+  - The CGI script for WebUI is now compatible with both Apache and Lighttpd
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v4.5:
 
 * Bugfixes:

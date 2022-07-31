@@ -60,8 +60,13 @@ class Maintainer(object):
                 query = query.filter(Resource.id == resource)
             else:
                 query = query.filter(Resource.name == resource)
-            resource = query.one()
-            print(json.dumps(resource.to_dict(), indent=4))
+
+            resource_obj = query.one_or_none()
+            if not resource_obj:
+                log.error("Unknown resource: {0}".format(resource))
+                return
+
+            print(json.dumps(resource_obj.to_dict(), indent=4))
 
     def resource_delete(self, args):
         resources = args.resource

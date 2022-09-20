@@ -1,5 +1,14 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v4.7:
+
+* Bugfixes:
+
+  - the new mechanism for cleaning orphaned resources was cleaning also
+    resources in STARTING/DELETING/RELEASING states.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v4.6:
 
 * New features:

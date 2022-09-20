@@ -357,7 +357,7 @@ class CleanUnknownWorker(Worker):
 
     def _list_known_resources(self):
         with session_scope() as session:
-            on = QResources(session).up().all()
+            on = QResources(session).on().all()
             return [resource.name for resource in on]
 
 

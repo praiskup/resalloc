@@ -18,7 +18,6 @@
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine
-from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import sessionmaker, scoped_session
 
 from resallocserver.config import get_config
@@ -49,7 +48,7 @@ class AppContext:
         return get_logger("resallocserver")
 
     def instantiate_engine(self):
-        return create_engine(self.config['db_url'], poolclass=NullPool)
+        return create_engine(self.config['db_url'])
 
     def instantiate_session(self):
         return scoped_session(sessionmaker(bind=self.engine))

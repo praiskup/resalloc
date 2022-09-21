@@ -53,6 +53,14 @@ class Ticket(Base, TagMixin):
     tid = Column(String)
     sandbox = Column(String, nullable=True)
 
+    __table_args__ = (
+        Index(
+            'ix_not_closed_tickets', state,
+            postgresql_where=(state != 'CLOSED'),
+            # TODO: SQLAlchemy 0.9.9+ sqlite_where=(state != 'CLOSED'),
+        ),
+    )
+
     def __str__(self):
         return "<Ticket #{0}>".format(self.id)
 

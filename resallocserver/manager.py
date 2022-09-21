@@ -142,13 +142,15 @@ class ThreadLocalData(threading.local):
 
 
 class Worker(threading.Thread):
-    def __init__(self, event, pool, res_id):
+    def __init__(self, event, pool, res_id, name=None):
         self.local = ThreadLocalData(
             pool=pool,
             resource_id=res_id,
         )
+        if name is not None:
+            name = "{0}-{1}".format(name, res_id or pool)
         self.event = event
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name=name)
 
     def job(self):
         """ The task to be done by background thread. """
@@ -168,6 +170,9 @@ class Worker(threading.Thread):
 
 
 class TerminateWorker(Worker):
+    def __init__(self, event, pool, res_id):
+        super(TerminateWorker, self).__init__(event, pool, res_id, "Terminator")
+
     def close(self):
         with session_scope() as session:
             resource = session.query(models.Resource).get(self.resource_id)
@@ -192,8 +197,7 @@ class TerminateWorker(Worker):
             id_in_pool = resource.id_in_pool
             session.expunge(resource)
 
-        self.log.debug("TerminateWorker(pool={0}): name={1} by: \"{2}\""\
-                .format(self.pool.name, resource.name, self.pool.cmd_delete))
+        self.log.info("Terminating %s started", resource.name)
         if not self.pool.cmd_delete:
             self.close()
             return
@@ -208,9 +212,13 @@ class TerminateWorker(Worker):
                 data=resource.data,
         )
         self.close()
+        self.log.info("Terminating %s finished", resource.name)
 
 
 class ReleaseWorker(Worker):
+    def __init__(self, event, pool, res_id):
+        super(ReleaseWorker, self).__init__(event, pool, res_id, "Releaser")
+
     """ Call `Pool.cmd_release` shell command asynchronously """
     def job(self):
         with session_scope() as session:
@@ -219,8 +227,7 @@ class ReleaseWorker(Worker):
             resource_name = resource.name
             session.expunge(resource)
 
-        self.log.debug("Releasing worker: pool=%s name=%s",
-                       self.pool.name, resource_name)
+        self.log.info("Releasing %s", resource_name)
         out = run_command(self.pool.id, resource.id, resource_name, id_in_pool,
                           self.pool.cmd_release, "release", data=resource.data)
         status = out["status"]
@@ -229,7 +236,7 @@ class ReleaseWorker(Worker):
             # re-query the expunged resource
             mod_resource = session.query(models.Resource).get(self.resource_id)
             if status:
-                self.log.debug("Releasing worker failed: pool=%s name=%s cmd=%s",
+                self.log.error("Releasing worker failed: pool=%s name=%s cmd=%s",
                                self.pool.name, resource_name,
                                self.pool.cmd_release)
                 # mark it for removal
@@ -239,27 +246,25 @@ class ReleaseWorker(Worker):
         if not status:
             self.event.set()
 
-        self.log.debug("Ended releasing: pool=%s name=%s",
-                       self.pool.name, resource_name)
+        self.log.info("Releasing %s finished", resource_name)
 
 
 class AllocWorker(Worker):
+    def __init__(self, event, pool, res_id, name=None):
+        super(AllocWorker, self).__init__(event, pool, res_id, "Allocator")
 
     def job(self):
-        self.log.debug(
-            "Allocating new resource id={id} in pool '{pool}' by {cmd}"\
-                .format(
-                    id=self.resource_id,
-                    pool=self.pool.name,
-                    cmd=self.pool.cmd_new
-                )
-        )
-
         id_in_pool = None
         with session_scope() as session:
             resource = session.query(models.Resource).get(self.resource_id)
             id_in_pool = resource.id_in_pool
             session.expunge(resource)
+
+        self.log.info(
+            "Allocating %s (#%s in pool '%s') %s",
+            resource.name, id_in_pool, self.pool.name,
+            threading.current_thread().ident
+        )
 
         # Run the allocation script.
         output = run_command(
@@ -298,7 +303,8 @@ class AllocWorker(Worker):
                     tag_obj.priority = tag_priority
                     tags.append(tag_obj)
 
-            self.log.debug("Allocator ends with state={0}".format(resource.state))
+            self.log.info("Allocating %s finished => %s",
+                          resource.name, resource.state)
             session.add_all(tags + [resource])
 
             if resource.state == RState.ENDED:
@@ -314,8 +320,12 @@ class CleanUnknownWorker(Worker):
     Delete all resources that are not recognized by resalloc
     https://github.com/praiskup/resalloc/issues/88
     """
+    def __init__(self, event, pool, res_id, name=None):
+        super(CleanUnknownWorker, self).__init__(event, pool, res_id,
+                                                 "GarbageCleaner")
+
     def job(self):
-        self.log.debug("Cleaning unused resources in %s pool", self.pool.id)
+        self.log.info("Cleaning unused resources in %s pool", self.pool.id)
 
         all_resources = self._list_all_resources()
         known_resources = self._list_known_resources()
@@ -363,7 +373,7 @@ class CleanUnknownWorker(Worker):
 
 class Watcher(threading.Thread):
     def loop(self):
-        app.log.debug("Watcher loop")
+        app.log.info("Watcher loop")
         pools = reload_config()
         to_check = {}
         with session_scope() as session:
@@ -407,8 +417,8 @@ class Watcher(threading.Thread):
                 res.check_last_time = time.time()
                 if rc['status']:
                     res.check_failed_count = res.check_failed_count + 1
-                    app.log.debug("failed check #{0} for {1}"\
-                            .format(res.check_failed_count, res_id))
+                    app.log.info("Check %s fail count %d", res_id,
+                                 res.check_failed_count)
                 else:
                     res.check_failed_count = 0
                 session.add(res)
@@ -511,7 +521,6 @@ class Pool(object):
             pool_id = self._allocate_pool_id(session, resource)
             session.add(pool_id)
             session.flush()
-            app.log.debug("id in pool: {0}".format(pool_id.id))
 
             resource_id = resource.id
             fill_dict = dict(
@@ -560,7 +569,7 @@ class Pool(object):
 
         is_too_soon = last_start + self.start_delay > time.time()
         if is_too_soon:
-            app.log.debug("too soon for Pool('{0}')".format(self.name))
+            app.log.debug("Too soon for Pool('%s')", self.name)
         return is_too_soon
 
     def _allocate_more_resources(self, event):
@@ -641,7 +650,9 @@ class Pool(object):
 
             for res in qres.check_failure_candidates():
                 if res.check_failed_count >= 3:
-                    app.log.debug("Removing %s, continuous failures", res.name)
+                    app.log.warning(
+                        "Requesting %s removal for continuous failures",
+                        res.name)
                     res.state = RState.DELETE_REQUEST
                     continue
 
@@ -661,16 +672,17 @@ class Pool(object):
                     last_allowed = now - self.reuse_max_time
                     if res.sandboxed_since < last_allowed:
                         app.log.debug(
-                                  "Removing %s, too long in one sandbox, "
-                                  "since %s, last_allowed %s, now %s",
-                                  res.name, res.sandboxed_since, last_allowed,
-                                  now)
+                            "Requesting %s removal, too long in one sandbox, "
+                            "since %s, last_allowed_time was %s, now %s",
+                            res.name, res.sandboxed_since, last_allowed, now)
                         res.state = RState.DELETE_REQUEST
                         continue
 
                 if self.reuse_max_count and \
                         res.releases_counter > self.reuse_max_count:
-                    app.log.debug("Removing %s, max reuses reached", res.name)
+                    app.log.debug(
+                        "Requesting %s removal, max_reuses=%d reached",
+                        res.name, self.reuse_max_time)
                     res.state = RState.DELETE_REQUEST
                     continue
 
@@ -750,7 +762,7 @@ class Manager(object):
                     continue
 
                 # we found an appropriate resource
-                app.log.debug("Assigning %s to %s", resource.name, ticket.id)
+                app.log.info("Assigning %s to %s", resource.name, ticket.id)
                 assign_ticket(resource, ticket)
                 if ticket.tid:
                     notify_ticket = ticket.tid
@@ -761,7 +773,7 @@ class Manager(object):
 
 
     def _loop(self):
-        app.log.debug("Manager's loop.")
+        app.log.info("Manager's loop.")
 
         # Cleanup the old resources.
         for _, pool in reload_config().items():
@@ -769,12 +781,14 @@ class Manager(object):
 
         # Assign tasks.  This needs to be done after _detect_closed_tickets(),
         # because that call potentially releases some resources which need be
-        # preferrably re-used to not waste resources.
+        # preferably re-used to not waste resources.
         self._assign_tickets()
 
 
     def run(self):
-        watcher = Watcher()
+        threading.current_thread().name = "Manager"
+
+        watcher = Watcher(name="Watcher")
         watcher.event = self.sync.ticket
         watcher.daemon = True
         watcher.start()

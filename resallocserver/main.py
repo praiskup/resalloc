@@ -103,7 +103,7 @@ class Server(threading.Thread):
 
 
 def init_by_alembic():
-    app.log.debug("alembic init")
+    app.log.info("Initializing database")
     alembic_dir = os.path.dirname(__file__)
     with helpers.pushd(alembic_dir):
         alembicArgs = [
@@ -139,6 +139,9 @@ def main():
     try:
         Manager(sync).run()
     except KeyboardInterrupt:
-        pass
+        app.log.info("Stopping upon a KeyboardInterrupt")
+    except:
+        app.log.exception("Exception raised in Manager().run()")
+        raise
     finally:
         server.shutdown()

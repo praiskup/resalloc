@@ -1,5 +1,5 @@
 # Resalloc server's logging configuration.
-# Copyright (C) 2017 Red Hat, Inc.
+# Copyright (C) 2017-2022 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,9 @@ def get_logger(loggername):
     logfile = os.path.join(config['logdir'], 'main.log')
     log.setLevel(loglevel)
     file_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        "%(levelname)5s %(asctime)s "
+        "PID:%(process)d:%(thread)d(%(threadName)s) "
+        "%(message)s")
     main_file = logging.FileHandler(logfile)
     main_file.setLevel(loglevel)
     main_file.setFormatter(file_formatter)

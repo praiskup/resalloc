@@ -13,7 +13,7 @@ TEST_DATABASES := sqlite postgresql
 
 .PHONY: shelltests
 shelltests:
-	@cd shelltests ; \
+	cd shelltests ; \
 	status=true ; \
 	for python in $(TEST_PYTHONS); do \
 	    for database in $(TEST_DATABASES); do \
@@ -33,8 +33,8 @@ unittests:
 	$$status
 
 check:
-	@$(MAKE) unittests
-	@$(MAKE) shelltests
+	$(MAKE) unittests
+	$(MAKE) shelltests
 
 ERDFILE = erd.png
 

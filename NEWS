@@ -7,6 +7,9 @@ New in v4.7:
   - the new mechanism for cleaning orphaned resources was cleaning also
     resources in STARTING/DELETING/RELEASING states.
 
+  - fix traceback in `$ resalloc-maint resource-info` for a non-existing
+    resource
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 New in v4.6:

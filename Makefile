@@ -8,7 +8,7 @@ SHELL_TESTS := \
 	check.sh \
 	reuse.sh
 
-TEST_PYTHONS   := python2 python3
+TEST_PYTHONS   := python3
 TEST_DATABASES := sqlite postgresql
 
 .PHONY: shelltests

@@ -1,5 +1,23 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v4.8:
+
+* New features:
+
+  - Eetter logging support: Exceptions are logged to 'main.log', the
+    default log_level=info is made useful, more readable messages, log
+    entries contain PID, TID and thread name.
+
+  - Stopped using 'sqlalchemy.pool.NullPool' for connecting to database,
+    and use the default.  That is NullPool anyway for SQLite backend, and
+    QueuePool(pool_size=5) for the PostgreSQL backend:
+    https://docs.sqlalchemy.org/en/14/core/pooling.html#sqlalchemy.pool.NullPool
+
+  - A new PostgreSQL index to speedup `resalloc-maint ticket-list` command.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v4.7:
 
 * Bugfixes:

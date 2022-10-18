@@ -261,7 +261,7 @@ class AllocWorker(Worker):
             session.expunge(resource)
 
         self.log.info(
-            "Allocating %s (#%s in pool '%s') %s",
+            "Allocating %s (#%s in pool '%s') TID=%s",
             resource.name, id_in_pool, self.pool.name,
             threading.current_thread().ident
         )

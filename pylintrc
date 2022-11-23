@@ -20,8 +20,11 @@ ignored-classes=RState,TState
 # ---------------------------------
 # useless-object-inheritance
 #     We support python 2.
-disable=useless-object-inheritance
-
+# import-error
+#     This is to work-around the issues in our diff-lint CI where we do not have
+#     all the build/runtime requirements installed.  We can ignore this error
+#     because the packaging CI would actually discover the import issues anyway.
+disable=useless-object-inheritance,import-error
 
 [DESIGN]
 min-public-methods=1

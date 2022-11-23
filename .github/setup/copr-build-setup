@@ -10,7 +10,7 @@ PROJECT_PUSH=praiskup/resalloc
 build_deps=(
     git
     make
-    python3-setuptools
+    python3-argparse-manpage+setuptools
     python-unversioned-command
 )
 

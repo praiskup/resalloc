@@ -39,6 +39,7 @@ BuildRequires: postgresql-server
 
 %if %{with python3}
 BuildRequires: python3-alembic
+BuildRequires: python3-argparse-manpage
 BuildRequires: python3-devel
 BuildRequires: python3-psycopg2
 BuildRequires: python3-pytest
@@ -56,6 +57,7 @@ BuildRequires: python3-yaml
 
 %if %{with python2}
 BuildRequires: python-alembic
+BuildRequires: python2-argparse-manpage
 BuildRequires: python2-devel
 BuildRequires: python-psycopg2
 BuildRequires: python2-mock

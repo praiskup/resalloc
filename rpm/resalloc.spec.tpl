@@ -29,7 +29,7 @@ Name:       %srcname
 Summary:    %sum - client tooling
 Version:    @VERSION@
 Release:    1%{?dist}
-License:    GPLv2+
+License:    GPL-2.0-or-later
 URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
 

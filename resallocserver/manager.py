@@ -653,7 +653,8 @@ class Pool(object):
                     app.log.warning(
                         "Requesting %s removal for continuous failures",
                         res.name)
-                    res.state = RState.DELETE_REQUEST
+                    # Not just DELETE_REQUEST, we need to mark the ticket FAILED
+                    QResources(session).kill(res.id)
                     continue
 
             for res in qres.clean_candidates():

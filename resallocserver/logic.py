@@ -133,8 +133,6 @@ class QResources(QObject):
         """
         return (
             self.up()
-            # isn't it still used?
-            .filter(models.Resource.ticket_id.is_(None))
             .filter(models.Resource.check_failed_count > 0)
         )
 

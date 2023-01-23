@@ -1,5 +1,16 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v4.9:
+
+* New features
+
+    - Resources that fail the livecheck are terminated, even though they
+      have some ticket assigned.  Such a ticket goes to FAILED state.
+
+    - We use the SPDX-formatted license.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v4.8:
 
 * New features:

@@ -445,6 +445,7 @@ class Pool(object):
     cmd_release = None
     cmd_list = None
     livecheck_period = 600
+    livecheck_attempts = 3
     tags = None
     name_pattern = "{pool_name}_{id}_{datetime}"
 
@@ -649,7 +650,7 @@ class Pool(object):
             qres = QResources(session, pool=self.name)
 
             for res in qres.check_failure_candidates():
-                if res.check_failed_count >= 3:
+                if res.check_failed_count >= self.livecheck_attempts:
                     app.log.warning(
                         "Requesting %s removal for continuous failures",
                         res.name)

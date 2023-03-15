@@ -42,6 +42,10 @@
 ##      # The minimum delay between two livechecks is 300s (not more often).
 ##      livecheck_period: 300
 ##
+##      # The number of `cmd_livecheck` failures after which we forcibly delete
+##      # the resource.
+##      livecheck_attempts: 3
+##
 ##      # Delete the resource (and sub-resources, if any).  This command may be
 ##      # called multiple times when server needs, so you should make sure it's
 ##      # effects are idempotent.

@@ -1,3 +1,10 @@
+New in v4.10:
+
+* New features
+
+    - the number of "livecheck" attempts before the resource is deleted
+      is newly configurable via "livecheck_attempts"
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 New in v4.9:

@@ -12,9 +12,21 @@ from resalloc.helpers import TState
 from resallocserver import models
 from resallocserver.app import session_scope
 from resallocserver.main import Synchronizer
-from resallocserver.manager import Manager
+from resallocserver.manager import Manager, CrossPoolConfig, normalize_tags
 
 from tests import ResallocTestCase
+
+
+def test_normalize_tags():
+    """ Test that the normalize_tag() properly modifies the tags """
+    tags = ["a"]
+    normalize_tags(tags)
+    assert tags == [{"name": "a", "priority": 0}]
+    tags = ["a", {"name": "b"}, {"name": "c", "priority": 10}]
+    normalize_tags(tags)
+    assert tags == [{"name": "a", "priority": 0},
+                    {"name": "b", "priority": 0},
+                    {"name": "c", "priority": 10}]
 
 
 class TestManager(ResallocTestCase):
@@ -73,7 +85,7 @@ class TestManager(ResallocTestCase):
 
         sync = Synchronizer()
         manager = Manager(sync)
-        manager._assign_tickets()
+        manager._assign_tickets(CrossPoolConfig(set()))
 
         with session_scope() as session:
             ticket = session.query(models.Ticket).get(1)

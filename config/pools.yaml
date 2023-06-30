@@ -92,6 +92,27 @@
 ##          - ci_test_machine_x86_64
 ##          - ci_test_machine
 ##
+##      # This is similar to the "tags" configuration in terms of "matching
+##      # resources to tickets".  But on demand tags trigger a completely
+##      # different pool behavior.  Instead of preallocating a set of "free"
+##      # resources in advance dynamically, pool with the "tags_on_demand"
+##      # configured have by default zero resources allocated until some existing
+##      # ticket is taken with at least one of predefined "tags_on_demand".  The
+##      # more tags are taken, the more resources are allocated on demand.  By
+##      # example, if `beefy` tag is configured in pool, no resource is started
+##      # till `resalloc ticket --tag beefy` is taken.  Note that contrary to
+##      # normal pools, the resources are allocated on demand, so resolving such
+##      # tickets always takes some time (unless the resource is reused within
+##      # reuse_opportunity_time).  Multiple pools may provide the same
+##      # "on_demand_tags", but those tags may not be mixed between the "tags"
+##      # and "on_demand_tags" in multiple pools (configuration runtime error is
+##      # generated in such case).  The "max_prealloc" config, if also
+##      # specified, is ignored (no preallocation is possible).
+##      tags_on_demand:
+##          - beefy_machine_x86_64
+##          - name: beefy_machine
+##            priority: -10
+##
 ##    # The "reuse" feature options.  These options configure the mechanism of
 ##    # re-assigning of previously used resources to multiple subsequent tickets
 ##    # (when the assigned tickets belong to the same --sandbox).  Still, when the

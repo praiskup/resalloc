@@ -24,7 +24,16 @@ ignored-classes=RState,TState
 #     This is to work-around the issues in our diff-lint CI where we do not have
 #     all the build/runtime requirements installed.  We can ignore this error
 #     because the packaging CI would actually discover the import issues anyway.
-disable=useless-object-inheritance,import-error
+# too-few-public-methos
+#     Deliberately using classes instead of namedtuple, because it helps us with
+#     typing (completion).
+# consider-using-f-string
+#     We still support EPEL7.
+# too-many-lines
+# too-many-locals
+# too-many-branches
+#     Stylis errors that are low-priority, and sometimes hard to avoid.
+disable=useless-object-inheritance,import-error,too-few-public-methods,consider-using-f-string,too-many-lines,too-many-locals,too-many-branches
 
 [DESIGN]
 min-public-methods=1

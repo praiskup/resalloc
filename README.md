@@ -71,6 +71,9 @@ own when starting from scratch.
   new VM in the cloud and running Ansible playbooks to provision it can take few
   minutes), and users don't want to wait. It is a good idea to preallocate a
   small number of resources that are ready to be used immediately.
+- On demand allocation - In special "on demand" pool mode, resources are not
+  preallocated in advance but started on demand, only upon a ticket requesting
+  the resources.
 - Livechecks - Clouds are unreliable. VMs can break while starting or become
   unresponsive for various reasons. Resalloc periodically checks the liveness
   of all resources and makes sure money doesn't leak out of our pockets.

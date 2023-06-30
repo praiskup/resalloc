@@ -111,6 +111,42 @@ def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
     }
 
 
+def normalize_tags(tags):
+    """
+    Tags can be array of str() or dict() fields.  Transform strings to the
+    dict() variant so we can later work with them uniformly.
+    """
+    if not tags:
+        return
+
+    new_tags = []
+    for tag in tags:
+        if isinstance(tag, str):
+            new_tags.append({
+                "name": tag,
+                "priority": 0,
+            })
+        elif isinstance(tag, dict):
+            new_tags.append({
+                "name": tag["name"],
+                "priority": tag.get('priority', 0)
+            })
+        else:
+            assert False
+
+    del tags[:]
+    tags.extend(new_tags)
+
+
+class CrossPoolConfig:
+    """
+    Some configuration loaded from pools.yaml that is not strictly related to
+    a specific pool.
+    """
+    def __init__(self, on_demand_tags):
+        self.on_demand_tags = on_demand_tags
+
+
 def reload_config():
     config_dir = app.config["config_dir"]
     config_file = os.path.join(config_dir, "pools.yaml")
@@ -121,10 +157,21 @@ def reload_config():
         assert not pool_id in pools
         pool = Pool(pool_id)
         pool.from_dict(config[pool_id])
-        pool.validate()
+        if pool.tags and pool.tags_on_demand:
+            pool.tags += pool.tags_on_demand
+            pool.max_prealloc = 0
+
         pools[pool_id] = pool
 
-    return pools
+    on_demand = set()
+    for _, pool in pools.items():
+        for tag in pool.tags_on_demand:
+            on_demand.add(tag["name"])
+
+    for _, pool in pools.items():
+        pool.validate(on_demand)
+
+    return CrossPoolConfig(on_demand), pools
 
 
 class ThreadLocalData(threading.local):
@@ -280,28 +327,12 @@ class AllocWorker(Worker):
             resource.state = RState.ENDED if output['status'] else RState.UP
             resource.data = output['stdout']
             tags = []
-            if not isinstance(self.pool.tags, list):
-                msg = "Pool {pool} has set 'tags' set, but that's not an array"\
-                        .format(pool=self.name)
-                warnings.warn(msg)
-            else:
-                for tag in self.pool.tags:
-                    tag_name = None
-                    tag_priority = 0
-                    if isinstance(tag, str):
-                        # older format
-                        tag_name = tag
-                    elif isinstance(tag, dict):
-                        tag_name = tag['name']
-                        tag_priority = tag.get('priority', 0)
-                    else:
-                        assert False
-
-                    tag_obj = models.ResourceTag()
-                    tag_obj.id = tag_name
-                    tag_obj.resource_id = resource.id
-                    tag_obj.priority = tag_priority
-                    tags.append(tag_obj)
+            for tag in self.pool.tags:
+                tag_obj = models.ResourceTag()
+                tag_obj.id = tag["name"]
+                tag_obj.resource_id = resource.id
+                tag_obj.priority = tag["priority"]
+                tags.append(tag_obj)
 
             self.log.info("Allocating %s finished => %s",
                           resource.name, resource.state)
@@ -374,7 +405,7 @@ class CleanUnknownWorker(Worker):
 class Watcher(threading.Thread):
     def loop(self):
         app.log.info("Watcher loop")
-        pools = reload_config()
+        _, pools = reload_config()
         to_check = {}
         with session_scope() as session:
             # Even though we never terminate resources that have assigned
@@ -447,17 +478,50 @@ class Pool(object):
     livecheck_period = 600
     livecheck_attempts = 3
     tags = None
+    tags_on_demand = []
     name_pattern = "{pool_name}_{id}_{datetime}"
 
     reuse_opportunity_time = 0
     reuse_max_count = 0
     reuse_max_time = 3600
 
+    start_on_demand_this_cycle = 0
+
     def __init__(self, id):
         self.id = id
         # TODO: drop this
         self.name = id
 
+    @property
+    def tag_set(self):
+        """ Returns set() of (all) tag names assigned to this pool """
+        retval = set()
+        for tag in self.tags:
+            retval.add(tag["name"])
+        return retval
+
+    @property
+    def tag_set_on_demand(self):
+        """ Returns set() of on-demand tag names assigned to this pool """
+        retval = set()
+        for tag in self.tags_on_demand:
+            retval.add(tag["name"])
+        return retval
+
+    def get_tags_priority(self, queried_tags):
+        """
+        Given a set of tags, calculate the priority this Pool is given.
+        If the pool doesn't match all the requested tags, return None
+        """
+        priority = 0
+        found_tags = set()
+        for tag in self.tags:
+            if tag["name"] in queried_tags:
+                priority += tag["priority"]
+                found_tags.add(tag["name"])
+        if found_tags == queried_tags:
+            return priority
+        return None
 
     def loop(self, event):
         """
@@ -465,9 +529,6 @@ class Pool(object):
         and adjust the resource/ticket states.  ``event`` is the
         ``Synchronizer().ticket`` object.
         """
-
-        # decouple ticket from resource, and maybe switch UP → RELEASING
-        self._detect_closed_tickets(event)
 
         # switch UP → DELETE_REQUEST
         self._request_resource_removal()
@@ -482,9 +543,13 @@ class Pool(object):
         self._clean_unknown_resources(event)
 
 
-    def validate(self):
+    def validate(self, on_demand_tag_set):
         assert(self.cmd_new)
         assert(self.cmd_delete)
+
+        for tag in on_demand_tag_set:
+            if tag in self.tag_set:
+                assert tag in self.tag_set_on_demand
 
 
     def _allocate_pool_id(self, session, resource):
@@ -536,7 +601,7 @@ class Pool(object):
             AllocWorker(event, self, int(resource_id)).start()
 
     def from_dict(self, data):
-        allowed_types = [int, str, dict, type(None)]
+        allowed_types = [int, str, dict, type(None), list]
 
         if type(data) != dict:
             # TODO: warning
@@ -556,6 +621,17 @@ class Pool(object):
                 setattr(self, key, helpers.merge_dict(local, data[key]))
             else:
                 setattr(self, key, data[key])
+
+        for attr in ["tags", "tags_on_demand"]:
+            obj = getattr(self, attr, None)
+            if not isinstance(obj, list):
+                msg = "Pool {} attribute {} must is not list, ignoring".format(
+                    self.name, attr)
+                warnings.warn(msg)
+                setattr(self, attr, [])
+
+            obj = getattr(self, attr)
+            normalize_tags(obj)
 
     def _too_soon(self):
         last_start = 0.0
@@ -585,13 +661,25 @@ class Pool(object):
                 msg = msg + ' {0}={1}'.format(key,val)
             app.log.debug(msg)
 
-            if stats['on'] >= self.max \
-                   or stats['free'] + stats['start'] >= self.max_prealloc \
-                   or stats['start'] >= self.max_starting \
-                   or self._too_soon():
-                # Quota reached, don't allocate more.
+            if stats['on'] >= self.max:
                 break
 
+            if self.max_prealloc:
+                # Normal "preallocated" instances
+                if stats['free'] + stats['start'] >= self.max_prealloc:
+                    break
+
+            elif self.start_on_demand_this_cycle <= 0:
+                # The "on-demand" instances
+                break
+
+            if stats['start'] >= self.max_starting:
+                break
+
+            if self._too_soon():
+                break
+
+            self.start_on_demand_this_cycle -= 0
             self.allocate(event)
 
     def _clean_unknown_resources(self, event):
@@ -618,7 +706,8 @@ class Pool(object):
             dbinfo.cleaning_unknown_resources = datetime.now()
             session.add(dbinfo)
 
-    def _detect_closed_tickets(self, event):
+    def detect_closed_tickets(self, event):
+        """ decouple ticket from resource, and maybe switch UP → RELEASING """
         close_resources = []
 
         with session_scope() as session:
@@ -644,6 +733,64 @@ class Pool(object):
         # https://github.com/praiskup/resalloc/pull/87
         for resource_id in close_resources:
             ReleaseWorker(event, self, resource_id).start()
+
+
+    def _request_on_demand_resources_removal(self, session):
+        """
+        on-demand resources are typically expensive (e.g. the per-hour price)
+        and we don't want to keep them unused unreasonably long (e.g. when the
+        requesting ticket was closed for any reason).
+
+        We pay much more attention for the resource allocation logic than to
+        this cleanup logic (only allocate more resources in one of the pools
+        that match).  So it _is not typical_ we want to hit some resource here,
+        only if user really changed the mind and closed the on-demand ticket
+        prematurely.
+
+        Consider that
+        - our pool provides on-demand tags [A, B] and normal tag [C]
+        - there are these waiting tickets 1=[A, C], 2=[B], 3=[A, B], 4=[C, D],
+          and 5=[C].
+        - we have 5 resources allocated and ready to be assigned
+
+        Then 4. is not matching, so we don't reflect it.  Though 5. is a ticket
+        that is not "on-demand", but we can serve and we take it into account.
+        We do this because, when this expensive resource was already allocated,
+        it is bad to just drop it without actual use - so we prefer to give it
+        to even a less privileged ticket.
+
+        So we eventually pay attention to 1.-4., and we have one more - the
+        oldest resource is going to be terminated.
+        """
+
+        if not self.tags_on_demand:
+            # resources in this pool are not started on-demand
+            return
+
+        we_provide = self.tag_set
+
+        qtickets = QTickets(session)
+        waiting_on_us = 0
+        for ticket in qtickets.waiting(preload_tags=True):
+            if ticket.tag_set.issubset(we_provide):
+                waiting_on_us += 1
+
+        qres = QResources(session, pool=self.name)
+        resources = list(qres.ready())
+
+        # Consider only those instances that were never taken
+        resources = [r for r in resources if not r.releases_counter]
+        remove = len(resources) - waiting_on_us
+
+        remove_item = 0
+        while remove > 0:
+            resource = resources[remove_item]
+            app.log.debug("Deleting on-demand instance %s for not enough "
+                          "tickets", resource.id)
+            resource.state = RState.DELETE_REQUEST
+            remove -= 1
+            remove_item += 1
+
 
     def _request_resource_removal(self):
         with session_scope() as session:
@@ -689,13 +836,15 @@ class Pool(object):
                     res.state = RState.DELETE_REQUEST
                     continue
 
+            self._request_on_demand_resources_removal(session)
+
+
     def _garbage_collector(self, event):
         to_terminate = []
         with session_scope() as session:
             qres = QResources(session, pool=self.name)
             for res in qres.clean().all():
                 TerminateWorker(event, self, int(res.id)).start()
-
 
 
 class Manager(object):
@@ -707,12 +856,35 @@ class Manager(object):
         with self.sync.resource_ready:
             self.sync.resource_ready.notify_all()
 
-    def _assign_tickets(self):
+    def _assign_tickets(self, cross_pool_config):
+        ticket_id_queue = PriorityQueue()
+
+        resource_ids = set()
+
+        # Typically, the older the ticket is, the sooner we process that.  But
+        # if it is requesting an on-demand resource, it has a higher priority.
         with session_scope() as session:
             qticket = QTickets(session)
-            tickets = [x.id for x in qticket.waiting().order_by(models.Ticket.id).all()]
+            for ticket in qticket.waiting().order_by(models.Ticket.id).all():
+                if ticket.tag_set.intersection(cross_pool_config.on_demand_tags):
+                    ticket_id_queue.add_task(ticket.id, priority=10)
+                else:
+                    ticket_id_queue.add_task(ticket.id)
 
-        for ticket_id in tickets:
+            # Remember the initial list of resource IDs so the newer ticket IDs
+            # do not overtake older.
+            qres = QResources(session)
+            for resource in qres.ready():
+                resource_ids.add(resource.id)
+
+
+        while True:
+            try:
+                ticket_id = ticket_id_queue.pop_task()
+            except KeyError:
+                # no more tickets
+                break
+
             notify_ticket = False
             with session_scope() as session:
                 ticket = session.query(models.Ticket).get(ticket_id)
@@ -726,6 +898,9 @@ class Manager(object):
                 queue = PriorityQueue()
                 ticket_tags = ticket.tag_set
                 for resource in resources:
+                    if resource.id not in resource_ids:
+                        continue
+
                     res_tags = resource.tag_set
                     if resource.sandbox and resource.sandbox != ticket.sandbox:
                         continue
@@ -763,17 +938,144 @@ class Manager(object):
                 self._notify_waiting(notify_ticket)
 
 
+    def _decide_where_to_start_on_demand_instances(self, config, pools):
+        """
+        The on-demand resources are a bit more difficult than those
+        pre-allocated, because, if there's a triggering "on-demand" ticket we
+        don't want to simply start allocating machines in all the capable
+        pools, but only in one of them.
+        """
+
+        pools_on_demand = [pool for _, pool in pools.items()
+                           if pool.tags_on_demand]
+        pools_on_demand.sort(key=lambda x: x.name)
+
+        all_stats = {}
+        tickets_to_solve = {}
+
+        with session_scope() as session:
+            # Gather pools' statistics
+            for pool in pools_on_demand:
+                qres = QResources(session, pool=pool.name)
+                stats = qres.stats()
+                # Some resources may be already started or being started by the
+                # previous manager's loop() because there are some
+                # not-yet-processed tickets.  And we don't want the "old"
+                # tickets to trigger another VM allocation here.  We calculate
+                # _all_ "ready" resources here, and those being started.  Note
+                # that we know nothing about the resources themselves, so we
+                # ignore the "released" (included in "free") resources - simply
+                # put, released resources blindly block an allocation of another
+                # resources (for now) and must be terminated first.
+                stats["already_existing"] = stats["start"] + stats["ready"] + \
+                        stats["releasing"]
+                all_stats[pool.id] = stats
+
+            # Gather the "on demand" tickets to start new resources for.
+            qticket = QTickets(session)
+
+            for ticket in qticket.waiting(preload_tags=True):
+                # On-demand tickets only!  The tags are pre-loaded above.
+                if not ticket.tag_set.intersection(config.on_demand_tags):
+                    continue
+
+                # Only tickets that do not have an already starting resource!
+                ticket_has_resource = False
+                ticket_has_capable_pool = False
+
+                for pool in pools_on_demand:
+                    if pool.get_tags_priority(ticket.tag_set) is None:
+                        # this pool doesn't match the tag-set
+                        continue  # maybe the next pool?
+
+                    ticket_has_capable_pool = True
+
+                    pool_stats = all_stats[pool.id]
+                    if pool_stats["already_existing"] > 0:
+                        # We won't start a resource for this ticket, already
+                        # starting!
+                        pool_stats["already_existing"] -= 1
+                        ticket_has_resource = True
+                        break  # go to the next ticket
+
+                if not ticket_has_capable_pool:
+                    app.log.error("Couldn't find appropriate on demand pool for "
+                                  "ticket=%s, it will never be resolved!",
+                                  ticket.id)
+                    continue
+
+                if ticket_has_resource:
+                    app.log.debug("Ticket=%s likely has a resource running",
+                                  ticket.id)
+                    continue
+
+                app.log.info("Ticket handled %s", ticket.id)
+                # let's try to start a new resource for this ticket
+                tickets_to_solve[ticket.id] = ticket.tag_set
+
+
+        for ticket_id, ticket_tags in tickets_to_solve.items():
+
+            # Construct a list (priority queue) of all Pools related to the
+            # the handled ticket.
+            queue = PriorityQueue()
+            for pool in pools_on_demand:
+                priority = pool.get_tags_priority(ticket_tags)
+                if priority is None:
+                    # None means that the pool doesn't have all the tags
+                    continue
+                # Note that some pool might be failing to start instances right
+                # now.  We should somehow decrease the priority of such a pool
+                # here, to (e.g. randomly?) try the less prioritized pool.
+                queue.add_task(pool, priority)
+
+            # Pick the first adequate Pool (per priority) and start a new
+            # resource inside.
+            startup_triggered = False
+            while True:
+                try:
+                    pool = queue.pop_task()
+                except KeyError:
+                    # no more pools matching the tag-set
+                    break
+
+                stats = all_stats[pool.id]
+                if any([
+                    pool.start_on_demand_this_cycle + stats['on'] >= pool.max,
+                    pool.start_on_demand_this_cycle + stats['start'] >= pool.max_starting,
+                ]):
+                    continue  # try next capable pool?
+
+                startup_triggered = True
+                app.log.debug("Ticket=%s starts id in pool=%s", ticket_id,
+                              pool.id)
+                pool.start_on_demand_this_cycle += 1
+                break  # we've identified the pool, go to the next ticket!
+
+            if not startup_triggered:
+                app.log.debug("Ticket=%s can not start new resources, "
+                              "quotas reached", ticket_id)
+
+
     def _loop(self):
         app.log.info("Manager's loop.")
 
         # Cleanup the old resources.
-        for _, pool in reload_config().items():
+        cross_pool_config, pools = reload_config()
+
+
+        for _, pool in pools.items():
+            pool.detect_closed_tickets(self.sync.ticket)
+
+        self._decide_where_to_start_on_demand_instances(cross_pool_config, pools)
+
+        for _, pool in pools.items():
             pool.loop(self.sync.ticket)
 
-        # Assign tasks.  This needs to be done after _detect_closed_tickets(),
+        # Assign tasks.  This needs to be done after detect_closed_tickets(),
         # because that call potentially releases some resources which need be
         # preferably re-used to not waste resources.
-        self._assign_tickets()
+        self._assign_tickets(cross_pool_config)
 
 
     def run(self):

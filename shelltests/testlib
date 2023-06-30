@@ -74,6 +74,12 @@ fail  ()
 }
 fatal () { echo >&2 "FATAL: $*"; exit 1 ; }
 
+assert() {
+    eval "$2" || {
+        fatal "$1 ($2)"
+    }
+}
+
 # postgresql_start PORT DIR SOCKETDIR
 # -----------------------------------
 postgresql_start ()
@@ -81,6 +87,95 @@ postgresql_start ()
     local PORT="$1" DIR="$2" SOCKETDIR="$3"
     initdb "$DIR"
     pg_ctl start -w -o "-p $PORT -k $SOCKETDIR" -D "$DIR"
+}
+
+wait_up_resources()
+{
+    message=$1
+    info "Wait for $wait_num resources, $message"
+    counter=30
+    while true; do
+        up=$(maint resource-list --up | wc -l)
+        counter=$(( counter - 1))
+        if test "$up" -eq "$wait_num"; then
+            break
+        fi
+        test "$up" -lt "$wait_num" || {
+            maint resource-list --up
+            error "too many resources"
+        }
+        test $counter -gt 0
+        sleep 1
+    done
+}
+
+wait_ticket_resolved()
+{
+    _counter=30
+    _ticket=$1
+    _message=""
+    test -z "$2" || _message=" ($2)"
+    info "Wait for ticket $_ticket being resolved$_message"
+    while true; do
+        _count=$(maint ticket-list | grep "^$_ticket -" | grep -c resource= || :)
+        test "$_count" -ne 1 || break  # successful waiting
+        test "$_counter" -le 0 && fatal "Unsuccessful waiting for ticket $_ticket"
+        _counter=$(( _counter - 1))
+        sleep 1
+    done
+
+    wait_ticket_resolved_result_resource=$(
+        maint ticket-list | grep "^$_ticket -" | sed 's/.*resource=//'
+    )
+}
+
+get_assigned_ticket_count()
+{
+    get_assigned_ticket_count_result=$(maint ticket-list | grep -c resource=)
+}
+
+get_resource_count()
+{
+    get_resource_count_result=$(maint resource-list | wc -l)
+}
+
+get_ticket_count()
+{
+    get_ticket_count_result=$(maint ticket-list | wc -l)
+}
+
+assert_assigned_ticket_count()
+{
+    get_assigned_ticket_count
+    assert "Unexpected number of assigned tickets - $2" \
+           "test $get_assigned_ticket_count_result = $1"
+}
+
+assert_ticket_count()
+{
+    get_ticket_count
+    assert "Unexpected total number of tickets - $2" \
+           "test $get_ticket_count_result = $1"
+}
+
+assert_resource_count()
+{
+    get_resource_count
+    assert "Unexpected total number of resources - $2" \
+           "test $get_resource_count_result = $1"
+}
+
+get_ticket()
+{
+    get_ticket_result=$(client ticket "$@")
+}
+
+assert_starts_with()
+{
+    case $1 in
+        $2*) ;;
+        *) fatal "Assert that $1 starts with $2 failed, $3" ;;
+    esac
 }
 
 # vi: ft=sh

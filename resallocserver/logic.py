@@ -18,10 +18,11 @@
 import time
 import uuid
 
+from sqlalchemy.orm import Query, joinedload
+from sqlalchemy import or_
+
 from resalloc.helpers import RState, TState
 from resallocserver import models
-from sqlalchemy.orm import Query
-from sqlalchemy import or_
 
 
 def assign_ticket(resource, ticket):
@@ -69,10 +70,11 @@ class QResources(QObject):
         """
         Get ready resources, those which were never assigned or are released.
         The sandbox-assigned resources are sorted above others - so they can be
-        re-used first.
+        re-used first.  The query is already ordered by ID ASC.
         """
         return (self.up().filter(models.Resource.ticket_id.is_(None))
-                         .filter(models.Resource.check_failed_count==0))
+                         .filter(models.Resource.check_failed_count==0)
+                         .order_by(models.Resource.id.asc()))
 
     def taken(self):
         """
@@ -156,9 +158,15 @@ class QResources(QObject):
 class QTickets(QObject):
     query = Query(models.Ticket)
 
-    def waiting(self):
-        return self.query.filter_by(resource_id=None)\
-                         .filter_by(state=TState.OPEN)
+    def waiting(self, preload_tags=False):
+        query = (
+            self.query.filter_by(resource_id=None)
+            .filter_by(state=TState.OPEN)
+        )
+        if preload_tags:
+            query = query.options(joinedload("tags"))
+        return query
+
 
     def not_closed(self):
         return self.query.filter(models.Ticket.state != TState.CLOSED)

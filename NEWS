@@ -1,3 +1,13 @@
+New in v5.0:
+
+* New features
+
+    - New concept of "on demand" ticket tags added, these on demand tags
+      trigger a resource allocation.  Until such a ticket is taken, the
+      corresponding resource pool has no resource allocated.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v4.10:
 
 * New features

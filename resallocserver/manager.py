@@ -472,9 +472,10 @@ class Pool(object):
         # switch UP → DELETE_REQUEST
         self._request_resource_removal()
 
-        # switch DELETE_REQUEST → ENDED
+        # switch DELETE_REQUEST → DELETING (→ ENDED on background)
         self._garbage_collector(event)
 
+        # New in STARTING (slowly switching → UP on background)
         self._allocate_more_resources(event)
 
         # Delete all resources that are not recognized by resalloc

@@ -236,7 +236,7 @@ useradd -r -g "$group" -G "$group" -s /bin/bash \
 %systemd_postun_with_restart resalloc.service
 
 
-%global doc_files NEWS README
+%global doc_files NEWS README.md
 
 %files
 %doc %doc_files

@@ -23,6 +23,30 @@ users wait too much -- the server side is able to pre-allocate several
 instances in advance.  For more info, have a look at `./config/pools.yaml`
 configuration example.
 
+
+What do you mean by resources?
+------------------------------
+
+Resalloc's concept of _resources_ is intentionally vague and general. Whatever
+your allocation scripts spawn and return to resalloc, those are your
+_resources_. It can be virtual machines, docker containers, IP addresses, disk
+volumes, or in an extreme case even people (imagine a ticket system at the post
+office).
+
+There already are allocation scripts for various kinds of resources:
+
+- [resalloc-aws](https://github.com/praiskup/resalloc-aws) -
+  Allocates VMs in the Amazon EC2 cloud
+- [resalloc-ibm-cloud](https://github.com/fedora-copr/resalloc-ibm-cloud) -
+  Allocates VMs in the IBM Cloud
+- [resalloc-openstack](https://github.com/praiskup/resalloc-openstack) -
+  Allocates VMs in your OpenStack instance
+- [resalloc-kubernetes](https://github.com/TommyLike/resalloc-kubernetes) -
+  Allocates pods in your Kubernetes cluster
+
+If you can, please share your own.
+
+
 Typical client use-cases
 ------------------------
 

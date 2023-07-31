@@ -68,11 +68,11 @@ own when starting from scratch.
   somebody will have to pay for every allocated resource in the cloud, so we
   want to allocate only as much resources as we need at the moment.
 - Preallocation - Allocating new resources can take some time (e.g. spawning a
-  new VM in the cloud and running ansible playbooks to provision it can take few
+  new VM in the cloud and running Ansible playbooks to provision it can take few
   minutes), and users don't want to wait. It is a good idea to preallocate a
   small number of resources that are ready to be used immediately.
 - Livechecks - Clouds are unreliable. VMs can break while starting or become
-  unresponsive for various reasons. Resalloc periodically checks the livelines
+  unresponsive for various reasons. Resalloc periodically checks the liveness
   of all resources and makes sure money doesn't leak out of our pockets.
 - Resource prioritization - Multiple pools can provide the same resources but
   they might not cost the same. There is a price for running VMs in Amazon
@@ -81,8 +81,23 @@ own when starting from scratch.
 - Web interface - It is possible to optionally run a web UI and let users see
   what, and how many resources are available. For example, see
   [Copr resources](https://download.copr.fedorainfracloud.org/resalloc).
+- Reusing/Security/Sandboxing - In certain cases, you want to give the user
+  a full access to the allocated resource, even with the ability to break the
+  resource (poison the VM so the subsequent users are affected, e.g.).
+  Therefore Resalloc by default doesn't re-assign the same allocated resource to
+  other users (other tickets), and simply deletes the resource.  Since this
+  might be waste of resources (starting/stopping resources takes users the time
+  and thus money), as opt-in, resource might be placed into a "sandbox" (string
+  determining the sandbox) and later taken by subsequent ticket, but only if the
+  ticket is also in the same "sandbox".
+- Hooks - Most of the configuration just tells the Resalloc server
+  server what to do with the resource (to start, stop, release the resource,
+  etc.).  There are hook points to customize some actions (e.g. when VM is
+  being shut-down => remove local caches, when machine is released => remove
+  some temporary directory, ...).
 
-Resalloc was created to accomodate the ever growing
+
+Resalloc was created to accommodate the ever growing
 [farm of Copr builders](https://pavel.raiskup.cz/blog/copr-farm-of-builders.html).
 
 

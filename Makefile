@@ -28,7 +28,7 @@ shelltests:
 unittests:
 	status=true ; \
 	for python in $(TEST_PYTHONS); do \
-	    PYTHON=$$python ./unittests.sh || status=false ; \
+	    PYTHON=$$python ./unittests.sh -vv || status=false ; \
 	done ;\
 	$$status
 

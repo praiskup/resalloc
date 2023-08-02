@@ -31,7 +31,7 @@ from resallocserver.app import session_scope, app
 from resallocserver.logic import (
         QResources, QTickets, assign_ticket, release_resource
 )
-from resallocserver.priority_queue import PriorityQueue, PriorityQueueTask
+from resallocserver.priority_queue import PriorityQueue
 
 
 REUSED_RESOURCE_PRIORITY = 500
@@ -696,18 +696,6 @@ class Pool(object):
             for res in qres.clean().all():
                 TerminateWorker(event, self, int(res.id)).start()
 
-
-class PrioritizedResource(PriorityQueueTask):
-    """
-    Resource with priority (calculated from matching tasks).
-    """
-    def __init__(self, resource):
-        self.resource = resource
-
-    @property
-    def object_id(self):
-        """ Object_id from the resource id """
-        return self.resource.id
 
 
 class Manager(object):

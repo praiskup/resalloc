@@ -2,6 +2,11 @@
 Python priority queue implementation.
 """
 
+# TODO: rename "Task" to "Item" if we want to make this a library, we can
+# place any kind of resource into the Queue (Pools, Tickets, etc.).
+# TODO: enforce the PriorityQueueTask use.  Using the default __repr__ for
+# generic objects might lead to misbehavior.
+
 import itertools
 from heapq import heappop, heappush
 

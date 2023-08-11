@@ -1,19 +1,19 @@
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v5.0:
 
 * New features
 
-    - New concept of "on demand" ticket tags added, these on demand tags
-      trigger a resource allocation.  Until such a ticket is taken, the
-      corresponding resource pool has no resource allocated.
+    - A new concept of "on-demand" ticket tags has been introduced. These
+      on-demand tags, when assigned to tickets, trigger an "on-demand"
+      resource allocation in the corresponding pools, rather than
+      pre-allocating them in advance.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    - The README file has been significantly rewritten by Jakub Kadlčík in
+      markdown format.
 
-New in v4.10:
-
-* New features
-
-    - the number of "livecheck" attempts before the resource is deleted
-      is newly configurable via "livecheck_attempts"
+    - The number of "livecheck" attempts before a resource is deleted is
+      now configurable through the "livecheck_attempts" option.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -48,12 +48,19 @@ setup(
     packages=find_packages(exclude=('tests',)),
     data_files=[
         ('/etc/resallocserver', ['config/pools.yaml', 'config/server.yaml']),
+        ('/etc/resalloc-agent-spawner', ['config/agent-spawner/config.yaml']),
     ],
     package_data={
         'resallocserver': ['alembic.ini'],
     },
     scripts=['bin/resalloc', 'bin/resalloc-server', 'bin/resalloc-maint',
              'bin/resalloc-check-vm-ip'],
+    entry_points={
+        'console_scripts': [
+            'resalloc-agent-spawner = resalloc_agent_spawner.dispatcher:main',
+            'resalloc-agent-worker = resalloc_agent_spawner.worker:main',
+         ],
+    },
     install_requires=get_requirements(),
     cmdclass={
         'build_manpages': build_manpages,

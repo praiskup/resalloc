@@ -57,4 +57,4 @@ rpm: srpm
 
 
 clean:
-	rm -rf *.src.rpm *.tar.gz $(project)-*
+	rm -rf *.src.rpm *.tar.gz $(project)-*/

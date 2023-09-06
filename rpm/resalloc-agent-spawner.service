@@ -1,0 +1,15 @@
+[Unit]
+Description=Start self-stending agent-like resources using Resalloc
+After=syslog.target network.target auditd.service
+
+[Service]
+Type=simple
+User=resalloc
+Group=resalloc
+ExecStart=/usr/bin/resalloc-agent-spawner
+# we don't want to kill background action processors (daemoncontext)
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -24,6 +24,7 @@ jobs:
         uses: fedora-copr/vcs-diff-lint-action@v1
         with:
           linter_tags: pylint
+          install_rpm_packages: python3-copr-common
 
       - name: Upload artifact with detected defects in SARIF format
         uses: actions/upload-artifact@v3

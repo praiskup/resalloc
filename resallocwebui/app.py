@@ -38,7 +38,7 @@ def pools():
     result = {}
 
     # Read configuration from pools.yaml
-    pools_config = reload_config()
+    _, pools_config = reload_config()
 
     # Prepare the two-dimensional array, and fill it with zeros
     for name, pool in pools_config.items():

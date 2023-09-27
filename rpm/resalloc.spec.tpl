@@ -152,7 +152,6 @@ to the resalloc server.
 
 %package selinux
 Summary: SELinux module for %{name}
-Requires: %name-webui = %version-%release
 # Requires(post): policycoreutils-python
 BuildRequires: selinux-policy-devel
 %{?selinux_requires}

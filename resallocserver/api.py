@@ -58,13 +58,6 @@ class ServerAPI(object):
         return ticket_id
 
 
-    def _checkTicket(self, ticket_id, session):
-        ticket = session.query(models.Ticket).get(ticket_id)
-        if not ticket:
-            raise ServerAPIException("no such ticket")
-        return ticket
-
-
     def collectTicket(self, ticket_id):
         output = {
             'ready': False,
@@ -72,7 +65,11 @@ class ServerAPI(object):
             'closed': None
         }
         with session_scope() as session:
-            ticket = self._checkTicket(ticket_id, session)
+            ticket = session.query(models.Ticket).get(ticket_id)
+            if not ticket:
+                output["ready"] = None
+                return output
+
             if ticket.resource:
                 output['output'] = ticket.resource.data
                 output['ready'] = True

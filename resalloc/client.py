@@ -67,6 +67,7 @@ class Ticket(object):
     output = None
     closed = None
     ready = None
+    failed = None
 
     def __init__(self, ticket_id, connection=None):
         # pylint: disable=invalid-name
@@ -86,6 +87,7 @@ class Ticket(object):
         self.closed = output['closed']
         self.output = output['output']
         self.ready = output['ready']
+        self.failed = output["failed"]
         return bool(self.ready)
 
     def wait(self):

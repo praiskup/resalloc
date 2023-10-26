@@ -62,7 +62,8 @@ class ServerAPI(object):
         output = {
             'ready': False,
             'output': None,
-            'closed': None
+            'closed': None,
+            'failed': None,
         }
         with session_scope() as session:
             ticket = session.query(models.Ticket).get(ticket_id)
@@ -74,6 +75,8 @@ class ServerAPI(object):
                 output['output'] = ticket.resource.data
                 output['ready'] = True
             output['closed'] = ticket.state == TState.CLOSED
+            output['failed'] = ticket.state == TState.FAILED
+
         return output
 
 

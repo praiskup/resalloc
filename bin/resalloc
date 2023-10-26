@@ -89,6 +89,9 @@ def main():
             elif ticket.closed:
                 sys.stderr.write("WARNING: already closed ticket\n")
                 retval = 1
+            elif ticket.failed:
+                sys.stderr.write("WARNING: assigned resource failed\n")
+                retval = 1
             if ready:
                 sys.stdout.write(str(ticket.output))
                 return retval

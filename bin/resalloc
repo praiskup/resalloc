@@ -83,7 +83,10 @@ def main():
             ticket = conn.getTicket(arg.ticket)
             ready = ticket.collect()
             retval = 0
-            if ticket.closed:
+            if ticket.ready is None:
+                sys.stderr.write("WARNING: non-existing ticket\n")
+                retval = 1
+            elif ticket.closed:
                 sys.stderr.write("WARNING: already closed ticket\n")
                 retval = 1
             if ready:

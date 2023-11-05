@@ -688,6 +688,11 @@ class Pool(object):
 
         with session_scope() as session:
             dbinfo = session.query(models.Pool).get(self.name)
+            if not dbinfo:
+                app.log.warning(
+                    "Can not perform cleanup in the configured "
+                    "pool %s: no such pool in SQL database.", self.name)
+                return
             last_cleanup = dbinfo.cleaning_unknown_resources
             if last_cleanup is None:
                 last_cleanup = datetime.min

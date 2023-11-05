@@ -679,7 +679,7 @@ class Pool(object):
             if self._too_soon():
                 break
 
-            self.start_on_demand_this_cycle -= 0
+            self.start_on_demand_this_cycle -= 1
             self.allocate(event)
 
     def _clean_unknown_resources(self, event):

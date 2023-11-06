@@ -1,5 +1,39 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v5.1:
+
+* New Features:
+
+    - A new concept of "agent-like" resources has been implemented.  A new
+      `resalloc-agent-spawner` daemon (shipped in resalloc-agent-spawner
+      package) converges the number of agents (tickets opened against the
+      resalloc server) according to the current state of the external system
+      (e.g., according to the wishes of the OpenScanHub, software based on the
+      Kobo framework).  This feature is now provided in "beta" quality.
+
+    - The `resalloc ticket-check` now raises a WARNING for non-existing ticket
+      IDs.  The API has been appropriately fixed so that even clients with the
+      `.survive_server_restart` option won't indefinitely hang on a non-existing
+      ticket ID.
+
+* Bugfixes:
+
+    - Web browsing the pools has been fixed to prevent users from encountering
+      500 errors.  For more information, see
+      https://github.com/fedora-copr/copr/issues/2882
+
+    - The `resalloc-selinux` package has dropped the RPM dependency on
+      `resalloc-webui`.
+
+    - A bug in the "on-demand" resources concept has been fixed so that even a
+      single ticket can no longer trigger the allocation of multiple resources.
+
+    - A traceback bug-fix has been added to the "cleanup resource orphans"
+      logic, addressing cases when no resource has yet started in the configured
+      pool. A user-friendly warning is now raised instead.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v5.0:
 
 * New features

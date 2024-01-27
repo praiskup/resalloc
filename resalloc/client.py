@@ -3,7 +3,6 @@ Client resalloc Python API.
 """
 from __future__ import print_function
 
-import errno
 import socket
 import time
 import sys
@@ -23,15 +22,6 @@ class _WrappedXMLRPCClient(object):
     def __init__(self, connection_string, survive_server_restart):
         self._conn = C_XMLRPC(connection_string)
         self.survive_server_restart = survive_server_restart
-        self._retry_errors = [
-            errno.ECONNREFUSED,
-            errno.ECONNABORTED,
-            errno.ECONNRESET,
-            errno.ENETUNREACH,
-            errno.ENETRESET,
-            errno.ENETDOWN,
-            errno.EADDRNOTAVAIL,
-        ]
 
     def call(self, name, *args):
         """
@@ -43,10 +33,9 @@ class _WrappedXMLRPCClient(object):
         while True:
             try:
                 return fcall(*args)
-            except socket.error as os_e:
+            except socket.error as sock_err:
+                print(str(sock_err), file=sys.stderr)
                 if not self.survive_server_restart:
-                    raise
-                if os_e.errno not in self._retry_errors:
                     raise
             except RPCEXCEPTION as ex:
                 print(str(ex), file=sys.stderr)

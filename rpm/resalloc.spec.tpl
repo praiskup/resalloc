@@ -144,6 +144,7 @@ Summary: %sum - daemon starting agent-like resources
 
 Requires(pre): /usr/sbin/useradd
 Requires: python3-copr-common
+Requires: python3-daemon
 Requires: python3-redis
 Requires: python3-setproctitle
 

@@ -164,7 +164,7 @@ class QTickets(QObject):
             .filter_by(state=TState.OPEN)
         )
         if preload_tags:
-            query = query.options(joinedload("tags"))
+            query = query.options(joinedload(models.Ticket.tags))
         return query
 
 

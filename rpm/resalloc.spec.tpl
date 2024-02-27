@@ -88,6 +88,8 @@ Source5: resalloc-agent-spawner.service
 Source2: logrotate
 Source3: merge-hook-logs
 Source4: cron.hourly
+# GPL-2.0-or-later too
+Source6: https://raw.githubusercontent.com/praiskup/wait-for-ssh/main/wait-for-ssh
 
 %description
 %desc
@@ -207,10 +209,13 @@ rm -r resalloc_agent_spawner
 
 %build
 %if %{with python2}
+python=%__python2
 %py2_build
 %else
 %py3_build
+python=%__python3
 %endif
+sed "1c#! $python" %SOURCE6 > %{name}-wait-for-ssh
 
 
 %install
@@ -241,6 +246,7 @@ install -d -m 755 %buildroot/%_libexecdir
 install -p -m 755 %SOURCE3 %buildroot/%_libexecdir/%name-merge-hook-logs
 install -d %buildroot%_sysconfdir/cron.hourly
 install -p -m 755 %SOURCE4 %buildroot%_sysconfdir/cron.hourly/resalloc
+install -p -m 755 %name-wait-for-ssh %buildroot%_bindir/%name-wait-for-ssh
 
 %if %{without python3}
 rm %buildroot%_bindir/%name-agent-*
@@ -318,6 +324,7 @@ ln -s "%{default_sitelib}/%{name}server" %buildroot%_homedir/project
 %{_bindir}/%{name}-server
 %{_bindir}/%{name}-maint
 %{_bindir}/%{name}-check-vm-ip
+%{_bindir}/%{name}-wait-for-ssh
 %attr(0750, %sysuser, %sysgroup) %dir %{_sysconfdir}/%{name}server
 %config(noreplace) %{_sysconfdir}/%{name}server/*
 %_unitdir/resalloc.service

@@ -3,3 +3,4 @@
 *.spec
 noarch/
 resalloc*/
+wait-for-ssh

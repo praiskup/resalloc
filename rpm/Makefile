@@ -50,7 +50,7 @@ $(tarball): clean
 
 srpm: $(tarball) $(spec)
 	rm -rf *.src.rpm
-	rpmbuild -bs $(rpmbuild_options) $(spec)
+	rpmbuild -bs --define _disable_source_fetch\ 0 $(rpmbuild_options) $(spec)
 
 rpm: srpm
 	rpmbuild --rebuild *.src.rpm --define "_rpmdir $(PWD)"

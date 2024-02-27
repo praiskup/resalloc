@@ -9,12 +9,14 @@
 #    # agent immediately marked for removal.  `cmd_terminate` exit status is
 #    # just ignored (we need to remove the agent no matter what).
 #
-#    # Prepare the agent.  Variable $RESALLOC_RESOURCE_DATA (base64 encoded)
-#    # is provided in the script environment.  Other variables like
-#    # RESOURCE_NAME, RESOURCE_POOL_ID, etc. are provided as well.
+#    # Prepare the agent.  Variable $AGENT_SPAWNER_RESOURCE_DATA (base64
+#    # encoded, output from `resalloc ticket-wait`) is provided in the script
+#    # environment.
 #    cmd_prepare: /bin/true
+#
 #    # Prepare the agent for termination.  Upon finishing this command, the
-#    # resalloc resource ticket is closed and the resource deallocated.
+#    # resalloc resource ticket is closed and the resource deallocated (the
+#    # $AGENT_SPAWNER_RESOURCE_DATA env var is provided as well).
 #    cmd_terminate: echo noop
 #
 #    # The following commands are executed synchronously by the agent spawner

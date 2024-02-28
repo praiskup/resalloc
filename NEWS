@@ -1,5 +1,31 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v5.2:
+
+* New Features
+
+    - Added a new convenience script, /bin/resalloc-wait-for-ssh.  This script
+      is useful for cloud drivers that want to actively wait until the VMs
+      (resources) become available on SSH.
+
+    - The /bin/resalloc-check-vm-ip now optionally accepts the $SSH_USER
+      environment variable if checking root-SSH isn't possible.  Users can use
+      `cmd_livecheck: SSH_USER=centos resalloc-check-vm-ip`.
+
+* Bug Fixes
+
+    - Compatibility fix with SQLAlchemy v2.
+
+    - The $AGENT_SPAWNER_RESOURCE_DATA variable content is now base64 encoded.
+
+    - The resalloc-agent-spawner package now correctly specifies all the
+      required runtime dependencies.
+
+    - The `survive_server_restart` client option now ignores all possible
+      server socket errors, avoiding unexpected client interrupts.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v5.1:
 
 * New Features:

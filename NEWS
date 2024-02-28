@@ -1,5 +1,16 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v5.3:
+
+* Changes:
+
+    - The helper scripts have been moved from resalloc-server to the
+      resalloc-helpers (sub)package.  Cloud drivers that rely on those
+      scripts might be usable without the resalloc-server package and its
+      transitive dependencies.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v5.2:
 
 * New Features

@@ -103,6 +103,7 @@ Summary:    %sum - server part
 Requires: crontabs
 Requires: logrotate
 Requires:   %default_python-%srcname = %version-%release
+Requires:   %srcname-helpers = %version-%release
 %if %{with python3}
 Requires: python3-alembic
 Requires: python3-six
@@ -121,6 +122,17 @@ Requires(pre): /usr/sbin/useradd
 
 The %name-server package provides the resalloc server, and
 some tooling for resalloc administrators.
+
+
+%package helpers
+Summary:    %sum - helper/library scripts
+
+%description helpers
+%desc
+
+Helper and library-like scripts for external Resalloc plugins like resalloc-aws,
+resalloc-openstack, etc.
+
 
 %if %{with python3}
 %package webui
@@ -323,8 +335,6 @@ ln -s "%{default_sitelib}/%{name}server" %buildroot%_homedir/project
 %{default_sitelib}/%{name}server
 %{_bindir}/%{name}-server
 %{_bindir}/%{name}-maint
-%{_bindir}/%{name}-check-vm-ip
-%{_bindir}/%{name}-wait-for-ssh
 %attr(0750, %sysuser, %sysgroup) %dir %{_sysconfdir}/%{name}server
 %config(noreplace) %{_sysconfdir}/%{name}server/*
 %_unitdir/resalloc.service
@@ -335,6 +345,14 @@ ln -s "%{default_sitelib}/%{name}server" %buildroot%_homedir/project
 %config %_sysconfdir/logrotate.d/resalloc-server
 %_libexecdir/resalloc-merge-hook-logs
 %config %attr(0755, root, root) %{_sysconfdir}/cron.hourly/resalloc
+
+
+%files helpers
+%doc %doc_files
+%license COPYING
+%{_bindir}/%{name}-check-vm-ip
+%{_bindir}/%{name}-wait-for-ssh
+
 
 %if %{with python3}
 %files agent-spawner

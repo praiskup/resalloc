@@ -157,16 +157,12 @@ def reload_config():
         assert not pool_id in pools
         pool = Pool(pool_id)
         pool.from_dict(config[pool_id])
-        if pool.tags and pool.tags_on_demand:
-            pool.tags += pool.tags_on_demand
-            pool.max_prealloc = 0
-
         pools[pool_id] = pool
 
+    # find the tag names marked as on demand
     on_demand = set()
     for _, pool in pools.items():
-        for tag in pool.tags_on_demand:
-            on_demand.add(tag["name"])
+        on_demand |= pool.tag_set_on_demand
 
     for _, pool in pools.items():
         pool.validate(on_demand)
@@ -327,7 +323,7 @@ class AllocWorker(Worker):
             resource.state = RState.ENDED if output['status'] else RState.UP
             resource.data = output['stdout']
             tags = []
-            for tag in self.pool.tags:
+            for tag in self.pool.tags_all:
                 tag_obj = models.ResourceTag()
                 tag_obj.id = tag["name"]
                 tag_obj.resource_id = resource.id
@@ -477,8 +473,6 @@ class Pool(object):
     cmd_list = None
     livecheck_period = 600
     livecheck_attempts = 3
-    tags = None
-    tags_on_demand = []
     name_pattern = "{pool_name}_{id}_{datetime}"
 
     reuse_opportunity_time = 0
@@ -489,12 +483,24 @@ class Pool(object):
 
     def __init__(self, id):
         self.id = id
+        self.tags = []
+        self.tags_on_demand = []
         # TODO: drop this
         self.name = id
 
     @property
+    def tags_all(self):
+        """ All tags, both on demand and nromal """
+        return self.tags + self.tags_on_demand
+
+    @property
     def tag_set(self):
-        """ Returns set() of (all) tag names assigned to this pool """
+        """ Returns a set() of all tag names assigned to this pool """
+        return self.tag_set_normal | self.tag_set_on_demand
+
+    @property
+    def tag_set_normal(self):
+        """ Returns a set() of normal tag names, `tags:` config option """
         retval = set()
         for tag in self.tags:
             retval.add(tag["name"])
@@ -502,7 +508,7 @@ class Pool(object):
 
     @property
     def tag_set_on_demand(self):
-        """ Returns set() of on-demand tag names assigned to this pool """
+        """ Returns a set() of tags_on_demand: names assigned to this pool """
         retval = set()
         for tag in self.tags_on_demand:
             retval.add(tag["name"])
@@ -515,7 +521,7 @@ class Pool(object):
         """
         priority = 0
         found_tags = set()
-        for tag in self.tags:
+        for tag in self.tags_all:
             if tag["name"] in queried_tags:
                 priority += tag["priority"]
                 found_tags.add(tag["name"])
@@ -546,10 +552,8 @@ class Pool(object):
     def validate(self, on_demand_tag_set):
         assert(self.cmd_new)
         assert(self.cmd_delete)
-
         for tag in on_demand_tag_set:
-            if tag in self.tag_set:
-                assert tag in self.tag_set_on_demand
+            assert tag not in self.tag_set_normal
 
 
     def _allocate_pool_id(self, session, resource):
@@ -622,16 +626,26 @@ class Pool(object):
             else:
                 setattr(self, key, data[key])
 
+            if key in ["tags", "tags_on_demand"]:
+                # set tags to empty lists by default
+                obj = getattr(self, key , None)
+                if isinstance(obj, list):
+                    setattr(self, key, obj)
+                    continue  # seems good!
+                app.log.warning("Ignoring configuration attribute %s in Pool %s, "
+                                "array/list expected!", key, self.name)
+
         for attr in ["tags", "tags_on_demand"]:
             obj = getattr(self, attr, None)
-            if not isinstance(obj, list):
-                msg = "Pool {} attribute {} must is not list, ignoring".format(
-                    self.name, attr)
-                warnings.warn(msg)
+            if obj is None:
                 setattr(self, attr, [])
+            else:
+                normalize_tags(obj)
 
-            obj = getattr(self, attr)
-            normalize_tags(obj)
+        if self.tags_on_demand and self.max_prealloc != 0:
+            app.log.warning("Setting max_prealloc=0 for on-demand pool %s",
+                            self.name)
+            self.max_prealloc = 0
 
     def _too_soon(self):
         last_start = 0.0

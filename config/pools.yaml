@@ -104,8 +104,8 @@
 ##      # normal pools, the resources are allocated on demand, so resolving such
 ##      # tickets always takes some time (unless the resource is reused within
 ##      # reuse_opportunity_time).  Multiple pools may provide the same
-##      # "on_demand_tags", but those tags may not be mixed between the "tags"
-##      # and "on_demand_tags" in multiple pools (configuration runtime error is
+##      # "tags_on_demand", but those tags may not be mixed between the "tags"
+##      # and "tags_on_demand" in multiple pools (configuration runtime error is
 ##      # generated in such case).  The "max_prealloc" config, if also
 ##      # specified, is ignored (no preallocation is possible).
 ##      tags_on_demand:

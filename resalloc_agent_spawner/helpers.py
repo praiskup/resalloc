@@ -37,7 +37,17 @@ def get_config():
         group.setdefault("cmd_terminate", "/bin/true")
         group.setdefault("cmd_try_release", "/bin/false")
         group.setdefault("tags", ["please-specify-some-tags"])
-    return config
+
+    # This dictionary is passed to redis APIs and other parts of code which
+    # expects configurations to be attributes rather than key/value pairs.
+    # This class works around this requirement.
+    # Thanks to https://stackoverflow.com/a/14620633
+    class AttrDict(dict):
+        def __init__(self, *args, **kwargs):
+            super(AttrDict, self).__init__(*args, **kwargs)
+            self.__dict__ = self
+
+    return AttrDict(config)
 
 
 class CmdCallerMixin:

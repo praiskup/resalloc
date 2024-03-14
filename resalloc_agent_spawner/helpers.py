@@ -28,6 +28,10 @@ def get_config():
     config.setdefault("agent_groups", {})
     config.setdefault("resalloc_server", "http://localhost:49100")
     config.setdefault("logfile", "/tmp/agent-spawner.log")
+    config.setdefault("redis_db", "")
+    config.setdefault("redis_host", "127.0.0.1")
+    config.setdefault("redis_port", "6379")
+    config.setdefault("redis_password", "")
     groups = config["agent_groups"]
     for group_id in groups.keys():
         group = groups[group_id]

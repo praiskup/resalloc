@@ -2,6 +2,7 @@
 Agent spawner daemon.  Part of the resalloc project.
 """
 
+import base64
 import sys
 import logging
 from copr_common.dispatcher import Dispatcher
@@ -84,7 +85,11 @@ class AgentSpawnerDispatcher(Dispatcher, CmdCallerMixin):
         if not ticket.collect():
             # not yet resolved or failed
             return None
-        return ticket.output
+
+        # The ticket.output is bytes(), and we don't plan to touch the data at
+        # all, we are just going to "forward" the data base64 encoded to our
+        # hook scripts.  Encode it now, and never change again.
+        return base64.b64encode(ticket.output.data).decode("ascii")
 
     def try_to_stop(self, group_id, to_stop):
         """
@@ -174,10 +179,10 @@ class AgentSpawnerDispatcher(Dispatcher, CmdCallerMixin):
         resource that we can prepare (in the background).  Switch the state.
         """
         for ticket_id in self.get_tickets("NEW"):
-            ticket = self.resalloc.getTicket(ticket_id)
-            if not ticket.collect():
+            data = self.get_ticket_data(ticket_id)
+            if data is None:
                 continue
-            self.set_ticket_attribute(ticket_id, "data", ticket.output)
+            self.set_ticket_attribute(ticket_id, "data", data)
             self.set_ticket_attribute(ticket_id, "state", "PREPARING")
 
     def detect_failed_tickets(self):

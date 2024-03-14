@@ -37,7 +37,7 @@ class AgentHandler(BackgroundWorker, CmdCallerMixin):
         # We know there's self._redis initialized by parent class so we don't
         # create yet another connection.
         redis_dict = self._redis.hgetall(redis_key)
-        ticket_data = base64.b64encode(redis_dict["data"])
+        ticket_data = base64.b64encode(bytes(redis_dict["data"], 'utf-8'))
 
         if redis_dict["state"] == "PREPARING":
             if self.cmd_take(redis_dict["group_id"], ticket_data):

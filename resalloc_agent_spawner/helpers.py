@@ -111,4 +111,6 @@ class CmdCallerMixin:
                 "AGENT_SPAWNER_RESOURCE_DATA": str(data),
             },
             "shell": True,
+            "stdout": subprocess.DEVNULL,
+            "stderr": subprocess.DEVNULL,
         }

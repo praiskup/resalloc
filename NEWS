@@ -1,5 +1,23 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v5.4:
+
+* Bugfixes:
+
+    - The agent-spawner workers now ignore the output from shell command hooks
+      (redirects them to /dev/null to avoid SIGPIPE)
+
+    - The agent-spawner server now correctly base64-encodes the ticket data.
+
+    - The agent-spawner package now requires up2date python3-copr-common for
+      fixed get_redis_connection() method.
+
+    - The resalloc's tags/tags_on_demand configuration was cleaned up to
+      allow user to keep them unspecified, e.g,, and several useful warnings
+      related to tag misconfiguration were added.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v5.3:
 
 * Changes:

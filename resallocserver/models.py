@@ -40,6 +40,7 @@ class Pool(Base):
     name = Column(String, primary_key=True)
     last_start = Column(Float, default=0)
     cleaning_unknown_resources = Column(DateTime, server_default=func.now())
+    max = Column(Integer, default=0)
 
 
 class Ticket(Base, TagMixin):

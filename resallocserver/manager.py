@@ -651,13 +651,7 @@ class Pool(object):
         last_start = 0.0
         with session_scope() as session:
             dbinfo = session.query(models.Pool).get(self.name)
-            if not dbinfo:
-                dbinfo = models.Pool()
-                dbinfo.name = self.name
-                dbinfo.last_start = 0.0
-                session.add(dbinfo)
-            else:
-                last_start = dbinfo.last_start
+            last_start = dbinfo.last_start
 
         is_too_soon = last_start + self.start_delay > time.time()
         if is_too_soon:
@@ -1075,6 +1069,14 @@ class Manager(object):
                 app.log.debug("Ticket=%s can not start new resources, "
                               "quotas reached", ticket_id)
 
+    def _init_pool_in_db(self, pool_config, session):
+        dbinfo = session.query(models.Pool).get(pool_config.name)
+        if not dbinfo:
+            dbinfo = models.Pool()
+            dbinfo.name = pool_config.name
+            dbinfo.last_start = 0.0
+            session.add(dbinfo)
+        dbinfo.max = pool_config.max
 
     def _loop(self):
         app.log.info("Manager's loop.")
@@ -1082,6 +1084,9 @@ class Manager(object):
         # Cleanup the old resources.
         cross_pool_config, pools = reload_config()
 
+        with session_scope() as session:
+            for _, config in pools.items():
+                self._init_pool_in_db(config, session)
 
         for _, pool in pools.items():
             pool.detect_closed_tickets(self.sync.ticket)

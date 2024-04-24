@@ -1,5 +1,21 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v5.5:
+
+* Bugfixes:
+
+    - Previous versions of the Resalloc Web-UI loaded the `pools.yaml`
+      configuration file. In cases of configuration issues, they attempted to
+      log problematic details into a log file owned by `resalloc-server`
+      (`var/log/resallocserver`).  Such attempts resulted in file permission
+      problems.  The Web-UI logic has been modified to no longer read
+      `pools.yaml` and to rely solely on the database.  In the future, we have
+      to implement a completely separate configuration for the Web-UI and cease
+      loading `server.yaml`, which should not be readable by Apache either, for
+      instance.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v5.4:
 
 * Bugfixes:

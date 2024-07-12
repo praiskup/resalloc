@@ -453,7 +453,14 @@ class Watcher(threading.Thread):
 
     def run(self):
         while True:
-            self.loop()
+            try:
+                self.loop()
+            except:  # pylint: disable=bare-except
+                # We are a daemon thread that nobody restarts in case of
+                # unexpected failure, so let's try to recover :shrug:.  If the
+                # parent dies, we get killed without any announcement, sounds
+                # fair.
+                app.log.exception("Watcher's logic raised exception, ignoring.")
             time.sleep(app.config["sleeptime"] / 2)
 
 

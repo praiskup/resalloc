@@ -22,7 +22,7 @@ Resalloc pools
     </tr>
     </thead>
     <tbody>
-    {% for pool, info in information.items() %}
+    {% for pool, info in information.items()|sort(attribute='0') %}
     <tr>
         <th scope="row">{{ pool }}</th>
         <td>{{ info['MAX'] }}</td>

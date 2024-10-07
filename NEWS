@@ -1,5 +1,18 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v5.6:
+
+* Bugfixes:
+
+    - The Watcher thread no longer fails in the case of random database
+      exceptions, such as "database is locked."  It now simply retries, ensuring
+      the cluster remains well-maintained (cleanup of dead machines works
+      properly).
+
+    - The Web-UI now sorts the list of Pools alphabetically (PR #161).
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v5.5:
 
 * Bugfixes:

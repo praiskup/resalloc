@@ -1,6 +1,8 @@
 [Unit]
 Description=Resource allocator server
 After=network.target
+After=postgresql.service
+Wants=postgresql.service
 
 [Service]
 Type=simple

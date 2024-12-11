@@ -43,6 +43,9 @@ There already are allocation scripts for various kinds of resources:
   Allocates VMs in your OpenStack instance
 - [resalloc-kubernetes](https://github.com/TommyLike/resalloc-kubernetes) -
   Allocates pods in your Kubernetes cluster
+- LibVirt — Fedora Copr uses the [new](https://pagure.io/fedora-infra/ansible/blob/main/f/roles/copr/backend/templates/provision/libvirt-new),
+  [delete](https://pagure.io/fedora-infra/ansible/blob/main/f/roles/copr/backend/files/provision/libvirt-delete) and
+  [list](https://pagure.io/fedora-infra/ansible/blob/main/f/roles/copr/backend/files/provision/libvirt-list) scripts.
 
 If you can, please share your own.
 

@@ -465,6 +465,7 @@ class Watcher(threading.Thread):
 
 
 class Pool(object):
+    description = None
     max = 4
     max_starting = 1
     max_prealloc = 2

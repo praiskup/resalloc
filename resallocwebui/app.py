@@ -1,15 +1,28 @@
-import os
+import yaml
 from flask import Flask, render_template
 from resallocserver.app import session_scope
 from resallocserver.logic import QResources
 from resallocserver import models
-from resallocserver.manager import reload_config
 from resalloc.helpers import RState
 from resallocwebui import staticdir, templatedir
 
 
 app = Flask(__name__, template_folder=templatedir)
 app.static_folder = staticdir
+
+
+def load_config():
+    """
+    A simpler version of `manager.py:reload_config`.
+    The `reload_config` function does some logging which causes permission
+    errors, it is misleading because it logs as the manager, etc.
+    """
+    try:
+        config_file = "/etc/resallocserver/pools.yaml"
+        with open(config_file, "r", encoding="utf-8") as fp:
+            return yaml.safe_load(fp)
+    except OSError:
+        return {}
 
 
 @app.route("/")
@@ -38,7 +51,7 @@ def pools():
     # e.g. result["copr_hv_x86_64_01_prod"]["STARTING"]
     result = {}
 
-    _, pools_from_config = reload_config()
+    pools_from_config = load_config()
 
     # Prepare the two-dimensional array, and fill it with zeros
     with session_scope() as session:
@@ -50,7 +63,7 @@ def pools():
                 continue
 
             result[pool.name]["DESCRIPTION"] =\
-                pools_from_config[pool.name].description
+                pools_from_config[pool.name].get("description")
 
     with session_scope() as session:
         # Iterate over running resources and calculate how many is starting,

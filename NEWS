@@ -1,5 +1,18 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v5.7:
+
+* New Features:
+
+    - A `description` field for pools in the `pools.yaml` config is now
+      recognized and displayed by the Web-UI.
+
+* Bugfixes:
+
+    - The Manager now waits until PostgreSQL is running (PR #165).
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v5.6:
 
 * Bugfixes:

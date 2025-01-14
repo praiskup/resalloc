@@ -1,3 +1,7 @@
 body {
     margin: 10px;
 }
+
+th span {
+    font-weight: normal;
+}

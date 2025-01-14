@@ -12,7 +12,6 @@ Resalloc pools
     <thead class="thead-dark">
     <tr>
         <th scope="col">Pool</th>
-        <th scope="col">Description</th>
         <th scope="col">Max</th>
         <th scope="col">Up</th>
         <th scope="col">Ready</th>
@@ -25,8 +24,16 @@ Resalloc pools
     <tbody>
     {% for pool, info in information.items()|sort(attribute='0') %}
     <tr>
-        <th scope="row">{{ pool }}</th>
-        <td class="col-sm-4">{{ info['DESCRIPTION'] |default(omit, True) }}</td>
+        <th scope="row" class="col-sm-4">
+            {% if info['DESCRIPTION'] %}
+            <details>
+                <summary>{{ pool }}</summary>
+                <span>{{ info['DESCRIPTION'] }}</span>
+            </details>
+            {% else %}
+            {{ pool }}
+            {% endif %}
+        </th>
         <td>{{ info['MAX'] }}</td>
         <td>{{ info['UP'] }}</td>
         <td>{{ info['READY'] }}</td>

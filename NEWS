@@ -1,5 +1,14 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v5.8:
+
+* Bugfixes:
+
+    - Show pool descriptions in a details tag. Otherwise the UX was especially
+      bad on vertical monitors
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v5.7:
 
 * New Features:

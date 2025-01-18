@@ -22,6 +22,16 @@ Resalloc pools
     </tr>
     </thead>
     <tbody>
+    <tr class="table-primary">
+        <th>Totals</th>
+        <td>{{ summary.MAX }}</td>
+        <td>{{ summary.UP }}</td>
+        <td>{{ summary.READY }}</td>
+        <td>{{ summary.TAKEN }}</td>
+        <td>{{ summary.STARTING }}</td>
+        <td>{{ summary.DELETING }}</td>
+        <td>{{ summary.RELEASING }}</td>
+    </tr>
     {% for pool, info in information.items()|sort(attribute='0') %}
     <tr>
         <th scope="row" class="col-sm-4">

@@ -77,7 +77,15 @@ def pools():
             key = "TAKEN" if resource.taken else "READY"
             result[resource.pool][key] += 1
 
-    return render_template("pools.html", information=result)
+    summary = {}
+    for pool_data in result.values():
+        for key, count in pool_data.items():
+            if not isinstance(count, int):
+                continue
+            summary.setdefault(key, 0)
+            summary[key] += count
+
+    return render_template("pools.html", information=result, summary=summary)
 
 
 if __name__ == '__main__':

@@ -1,5 +1,19 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v5.9:
+
+* Enhancements
+
+    - The Pool's page in the Web UI now includes a "totals" line that
+      displays overall statistics summarized for all pools.
+
+    - The Pool's Web UI page now also shows the `DELETE_REQUEST` numbers.
+
+    - The Resource's Web UI page now renders the Data field as `<code>`,
+      which properly displays newlines.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v5.8:
 
 * Bugfixes:

@@ -31,7 +31,7 @@ Resalloc resources
         <td>{{ resource.ticket_id }}</td>
         <td>{{ resource.user }}</td>
         <td>{{ resource.sandbox }}</td>
-        <td>{{ resource.to_dict()["data"] }}</td>
+        <td><pre><code>{{ resource.to_dict()["data"] }}</code></pre></td>
     </tr>
     {% endfor %}
     </tbody>

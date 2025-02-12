@@ -33,6 +33,18 @@ the purposes of CI/CD tasks.
 %bcond_with    python3
 %endif
 
+# Modern distributions (using RPM v4.19+; for example, Fedora 39+) do not
+# require the %%pre scriptlet for creating users/groups because the sysusers
+# feature is now built directly into RPM.  Simply including the sysusers
+# `mock.conf` file in a package payload is sufficient to leverage this feature.
+# However, for older distributions that lack this capability, we still define
+# the %%pre scriptlet.
+%if (0%{?rhel} && 0%{?rhel} < 10) || (0%{?mageia} && 0%{?mageia} < 10) || (0%{?suse_version} && 0%{?suse_version} < 1660)
+%bcond_without sysusers_compat
+%else
+%bcond_with sysusers_compat
+%endif
+
 %global default_python  %{?with_python3:python3}%{!?with_python3:python2}
 %global default_sitelib %{?with_python3:%python3_sitelib}%{!?with_python3:%python_sitelib}
 
@@ -82,6 +94,10 @@ BuildRequires: python-yaml
 
 Requires:   %default_python-%srcname = %version-%release
 
+%if %{with sysusers_compat}
+Requires(pre): shadow-utils
+%endif
+
 Source0: https://github.com/praiskup/%name/releases/download/v%version/%name-@TARBALL_VERSION@.tar.gz
 Source1: resalloc.service
 Source5: resalloc-agent-spawner.service
@@ -116,7 +132,6 @@ Requires: python-sqlalchemy
 Requires: python-yaml
 %endif
 
-Requires(pre): /usr/sbin/useradd
 %description server
 %desc
 
@@ -156,7 +171,6 @@ it shows page with information about resalloc resources.
 %package agent-spawner
 Summary: %sum - daemon starting agent-like resources
 
-Requires(pre): /usr/sbin/useradd
 Requires: python3-copr-common >= 0.23
 Requires: python3-daemon
 Requires: python3-redis
@@ -219,6 +233,16 @@ restorecon -R %_var/www/cgi-%{name} || :
 rm -r resalloc_agent_spawner
 %endif
 
+# Create sysusers.d config files
+cat >resalloc.sysusers.conf <<EOF
+u resalloc - '%sysuser service user' %_homedir /bin/bash
+m resalloc %sysgroup
+EOF
+cat >resalloc-agent-spawner.sysusers.conf <<EOF
+u resalloc-agent-spawner - '%agent_user service user' - -
+m resalloc-agent-spawner %agent_group
+EOF
+
 
 %build
 %if %{with python2}
@@ -266,6 +290,9 @@ rm %buildroot%_bindir/%name-agent-*
 rm %buildroot%_sysconfdir/resalloc-agent-spawner/config.yaml
 %endif
 
+install -m0644 -D resalloc.sysusers.conf %{buildroot}%{_sysusersdir}/resalloc.conf
+install -m0644 -D resalloc-agent-spawner.sysusers.conf %{buildroot}%{_sysusersdir}/resalloc-agent-spawner.conf
+
 
 %if %{with check}
 %check
@@ -281,8 +308,10 @@ make check TEST_PYTHONS="python3"
 ln -s "%{default_sitelib}/%{name}server" %buildroot%_homedir/project
 
 
+%if %{with sysusers_compat}
 %pre server
 %create_user_group %sysuser %sysgroup /bin/bash %_homedir
+%endif
 
 %post server
 %systemd_post resalloc.service
@@ -292,8 +321,10 @@ ln -s "%{default_sitelib}/%{name}server" %buildroot%_homedir/project
 
 
 %if %{with python3}
+%if %{with sysusers_compat}
 %pre agent-spawner
 %create_user_group %agent_user %agent_group /bin/false /
+%endif
 
 %post agent-spawner
 %systemd_post resalloc-agent-spawner.service
@@ -346,6 +377,7 @@ ln -s "%{default_sitelib}/%{name}server" %buildroot%_homedir/project
 %config %_sysconfdir/logrotate.d/resalloc-server
 %_libexecdir/resalloc-merge-hook-logs
 %config %attr(0755, root, root) %{_sysconfdir}/cron.hourly/resalloc
+%{_sysusersdir}/resalloc.conf
 
 
 %files helpers
@@ -361,6 +393,7 @@ ln -s "%{default_sitelib}/%{name}server" %buildroot%_homedir/project
 %{default_sitelib}/%{name}_agent_spawner
 %_unitdir/resalloc-agent-spawner.service
 %config(noreplace) %_sysconfdir/resalloc-agent-spawner
+%{_sysusersdir}/resalloc-agent-spawner.conf
 
 %files webui
 %doc %doc_files

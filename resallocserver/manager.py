@@ -16,6 +16,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+
 import base64
 import os
 import errno
@@ -52,24 +54,53 @@ def command_env(pool_id=None, res_id=None, res_name=None,
 
 def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
                 catch_stdout_bytes=None, data=None,
-                catch_stdout_lines_securely=False):
-    app.log.debug("running: " + command)
-    env = command_env(pool_id, res_id, res_name, id_in_pool, data)
+                catch_stdout_lines_securely=False, timeout=None):
+    """
+    Run command, and log into according directory (per.app.config).  If
+    catch_stdout_bytes is specified, we read & log continuously.
+    """
     config = app.config
+    logdir = os.path.join(config['logdir'], 'hooks')
+    return _run_command(app.log, logdir, pool_id, res_id, res_name, id_in_pool, command, ltype,
+                        catch_stdout_bytes, data, catch_stdout_lines_securely,
+                        timeout)
 
-    ldir = os.path.join(config['logdir'], 'hooks')
+
+def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
+                catch_stdout_bytes=None, data=None,
+                catch_stdout_lines_securely=False, timeout=None):
+    """
+    Internal variant for _run_command() that is easier to test locally like:
+    In [1] import logging
+    In [2] from resallocserver.manager import _run_command
+    In [3]: _run_command(logging, "/tmp/foo", "abc", 1, "abc_001", 1, "echo
+    started ; sleep 100", timeout=2)
+    Out[3]: {'status': 124}
+    """
+
+    # we do not support timeout when catching lines
+    assert not (timeout and catch_stdout_lines_securely)
+
+    log.debug("running: " + command)
+    env = command_env(pool_id, res_id, res_name, id_in_pool, data)
     try:
-        os.mkdir(ldir)
+        os.mkdir(logdir)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
 
-    lfile = os.path.join(ldir, '{0:06d}_{1}'.format(res_id, ltype))
+    lfile = os.path.join(logdir, '{0:06d}_{1}'.format(res_id, ltype))
     with open(lfile, 'a+b') as logfile:
 
         if not catch_stdout_bytes:
-            return {'status': subprocess.call(command, env=env, shell=True,
-                                              stdout=logfile, stderr=logfile)}
+            try:
+                return {'status': subprocess.call(command, env=env, shell=True,
+                                                  stdout=logfile, stderr=logfile,
+                                                  timeout=timeout)}
+            except subprocess.TimeoutExpired:
+                logfile.write(f"<timeouted after {timeout}s>\n".encode())
+                # default /bin/timeout utility exit status
+                return {'status': 124}
 
         stdout_written = 0
         stdout_stopped = False
@@ -373,6 +404,7 @@ class CleanUnknownWorker(Worker):
                 self.pool.cmd_delete,
                 'terminate',
                 data=None,
+                timeout=120,
             )
 
     def _list_all_resources(self):

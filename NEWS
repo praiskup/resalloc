@@ -1,5 +1,18 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v5.11
+
+* Bugfixes
+
+    - Issue #173 has been resolved. The resalloc server no longer allows the
+      processes spawned by CleanUnknownWorker to run indefinitely. Instead, if
+      these processes do not finish within 120 seconds, the server will
+      terminate them. This 120s timeout should not be a significant problem as
+      terminating processes only typically involves making a few "cloud API"
+      calls.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v5.10
 
 * Enhancements

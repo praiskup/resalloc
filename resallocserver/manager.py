@@ -106,40 +106,38 @@ def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool, command, lt
         stdout_stopped = False
 
         # Run the sub-command to be captured.
-        sp = subprocess.Popen(command, env=env, shell=True,
-                              stdout=subprocess.PIPE, stderr=logfile)
 
-        captured_string = b""
+        with subprocess.Popen(command, env=env, shell=True,
+                              stdout=subprocess.PIPE, stderr=logfile) as sp:
+            captured_string = b""
 
+            for line in iter(sp.stdout.readline, b''):
+                # Write to the log.
+                logfile.write(line)
+                logfile.flush()
 
-        for line in iter(sp.stdout.readline, b''):
-            # Write to the log.
-            logfile.write(line)
-            logfile.flush()
+                if stdout_stopped:
+                    continue
 
-            if stdout_stopped:
-                continue
+                if stdout_written + len(line) > catch_stdout_bytes:
+                    if stdout_written == 0 and not catch_stdout_lines_securely:
+                        # Even the first line is too long for this buffer.  Catch at
+                        # least part of it.
+                        line = line[:catch_stdout_bytes]
+                        captured_string += line
 
-            if stdout_written + len(line) > catch_stdout_bytes:
-                if stdout_written == 0 and not catch_stdout_lines_securely:
-                    # Even the first line is too long for this buffer.  Catch at
-                    # least part of it.
-                    line = line[:catch_stdout_bytes]
-                    captured_string += line
+                    stdout_stopped = True
+                    if not catch_stdout_lines_securely:
+                        captured_string += b"<< trimmed >>\n"
+                    continue
 
-                stdout_stopped = True
-                if not catch_stdout_lines_securely:
-                    captured_string += b"<< trimmed >>\n"
-                continue
+                stdout_written += len(line)
+                captured_string += line
 
-            stdout_written += len(line)
-            captured_string += line
-
-
-    return {
-        'status': sp.wait(),
-        'stdout': captured_string,
-    }
+            return {
+                'status': sp.wait(),
+                'stdout': captured_string,
+            }
 
 
 def normalize_tags(tags):

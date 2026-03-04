@@ -40,7 +40,7 @@ REUSED_RESOURCE_PRIORITY = 500
 
 
 def command_env(pool_id=None, res_id=None, res_name=None,
-                id_in_pool=None, data=None):
+                id_in_pool=None, named_counters=None, data=None):
     pfx = 'RESALLOC_'
     env = os.environ.copy()
     env[pfx + 'ID'] = str(res_id)
@@ -49,11 +49,14 @@ def command_env(pool_id=None, res_id=None, res_name=None,
     env[pfx + 'ID_IN_POOL'] = str(id_in_pool)
     if data is not None:
         env[pfx + 'RESOURCE_DATA'] = base64.b64encode(data)
+    if named_counters is not None:
+        for key, value in named_counters.items():
+            env[pfx + 'NAMED_COUNTER_' + key] = str(value)
     return env
 
 
-def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
-                catch_stdout_bytes=None, data=None,
+def run_command(pool_id, res_id, res_name, id_in_pool, named_counters, command,
+                ltype='alloc', catch_stdout_bytes=None, data=None,
                 catch_stdout_lines_securely=False, timeout=None):
     """
     Run command, and log into according directory (per.app.config).  If
@@ -61,14 +64,15 @@ def run_command(pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
     """
     config = app.config
     logdir = os.path.join(config['logdir'], 'hooks')
-    return _run_command(app.log, logdir, pool_id, res_id, res_name, id_in_pool, command, ltype,
-                        catch_stdout_bytes, data, catch_stdout_lines_securely,
-                        timeout)
+    return _run_command(app.log, logdir, pool_id, res_id, res_name, id_in_pool,
+                        named_counters, command, ltype, catch_stdout_bytes,
+                        data, catch_stdout_lines_securely, timeout)
 
 
-def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool, command, ltype='alloc',
-                catch_stdout_bytes=None, data=None,
-                catch_stdout_lines_securely=False, timeout=None):
+def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool,
+                 named_counters, command, ltype='alloc',
+                 catch_stdout_bytes=None, data=None,
+                 catch_stdout_lines_securely=False, timeout=None):
     """
     Internal variant for _run_command() that is easier to test locally like:
     In [1] import logging
@@ -82,7 +86,8 @@ def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool, command, lt
     assert not (timeout and catch_stdout_lines_securely)
 
     log.debug("running: " + command)
-    env = command_env(pool_id, res_id, res_name, id_in_pool, data)
+    env = command_env(pool_id, res_id, res_name, id_in_pool, named_counters,
+                      data)
     try:
         os.mkdir(logdir)
     except OSError as e:
@@ -252,6 +257,9 @@ class TerminateWorker(Worker):
             session.add(resource)
             if resource.id_in_pool_object:
                 session.delete(resource.id_in_pool_object)
+            for counter in resource.named_counters:
+                session.delete(counter)
+
         self.event.set()
 
     def job(self):
@@ -267,6 +275,7 @@ class TerminateWorker(Worker):
             session.add(resource)
             session.flush()
             id_in_pool = resource.id_in_pool
+            named_counters = resource.named_counters_dict
             session.expunge(resource)
 
         self.log.info("Terminating %s started", resource.name)
@@ -279,6 +288,7 @@ class TerminateWorker(Worker):
                 resource.id,
                 resource.name,
                 id_in_pool,
+                named_counters,
                 self.pool.cmd_delete,
                 'terminate',
                 data=resource.data,
@@ -297,11 +307,13 @@ class ReleaseWorker(Worker):
             resource = session.query(models.Resource).get(self.resource_id)
             id_in_pool = resource.id_in_pool
             resource_name = resource.name
+            named_counters = resource.named_counters_dict
             session.expunge(resource)
 
         self.log.info("Releasing %s", resource_name)
         out = run_command(self.pool.id, resource.id, resource_name, id_in_pool,
-                          self.pool.cmd_release, "release", data=resource.data)
+                          named_counters, self.pool.cmd_release, "release",
+                          data=resource.data)
         status = out["status"]
 
         with session_scope() as session:
@@ -330,6 +342,7 @@ class AllocWorker(Worker):
         with session_scope() as session:
             resource = session.query(models.Resource).get(self.resource_id)
             id_in_pool = resource.id_in_pool
+            named_tags = resource.named_counters_dict
             session.expunge(resource)
 
         self.log.info(
@@ -344,6 +357,7 @@ class AllocWorker(Worker):
             resource.id,
             resource.name,
             id_in_pool,
+            named_tags,
             self.pool.cmd_new,
             catch_stdout_bytes=512,
         )
@@ -399,6 +413,7 @@ class CleanUnknownWorker(Worker):
                 res_id,
                 resource,
                 None,
+                None,
                 self.pool.cmd_delete,
                 'terminate',
                 data=None,
@@ -415,6 +430,7 @@ class CleanUnknownWorker(Worker):
             res_id=0,
             res_name=None,
             id_in_pool=None,
+            named_counters=None,
             command=self.pool.cmd_list,
             ltype="list",
             catch_stdout_bytes=5120,
@@ -448,6 +464,7 @@ class Watcher(threading.Thread):
                     'last': item.check_last_time,
                     'fail': item.check_failed_count,
                     'id_in_pool': item.id_in_pool,
+                    'named_counters': item.named_counters_dict,
                     'data': item.data,
                 }
 
@@ -464,6 +481,7 @@ class Watcher(threading.Thread):
                     res_id,
                     data['name'],
                     data['id_in_pool'],
+                    data['named_counters'],
                     pool.cmd_livecheck,
                     'watch',
                     data=data["data"],
@@ -516,6 +534,7 @@ class Pool(object):
     reuse_opportunity_time = 0
     reuse_max_count = 0
     reuse_max_time = 3600
+    named_counters = []
 
     start_on_demand_this_cycle = 0
 
@@ -593,6 +612,14 @@ class Pool(object):
         for tag in on_demand_tag_set:
             assert tag not in self.tag_set_normal
 
+    def _find_smallest_number(self, query, field_name):
+        ids = {getattr(x, field_name): True for x in query.all()}
+        try_id = 0
+        while True:
+            if try_id in ids:
+                try_id += 1
+                continue
+            return try_id
 
     def _allocate_pool_id(self, session, resource):
         # allocate the lowest available pool_id
@@ -601,21 +628,29 @@ class Pool(object):
                        .filter_by(pool_name=self.name)
                        .order_by(models.IDWithinPool.id)
         )
-        ids = {x.id: True for x in ids_query.all()}
 
-        found_id = None
-        try_id = 0
-        while True:
-            if try_id in ids:
-                try_id += 1
-                continue
+        the_id = self._find_smallest_number(ids_query, "id")
+        found_id = models.IDWithinPool()
+        found_id.id = the_id
+        found_id.pool_name = self.name
+        found_id.resource_id = resource.id
+        return found_id
 
-            found_id = models.IDWithinPool()
-            found_id.id = try_id
-            found_id.pool_name = self.name
-            found_id.resource_id = resource.id
-            return found_id
-
+    def _allocate_named_counter_value(self, counter_name, session, resource):
+        """
+        Allocate the smallest number within COUNTER_NAME counter.
+        """
+        query = (
+                session.query(models.NamedCounter)
+                       .filter_by(counter_name=counter_name)
+                       .order_by(models.NamedCounter.value)
+        )
+        found_value = self._find_smallest_number(query, "value")
+        counter_value = models.NamedCounter()
+        counter_value.resource = resource
+        counter_value.value = found_value
+        counter_value.counter_name = counter_name
+        return counter_value
 
     def allocate(self, event):
         resource_id = None
@@ -629,6 +664,10 @@ class Pool(object):
 
             pool_id = self._allocate_pool_id(session, resource)
             session.add(pool_id)
+            for counter_name in self.named_counters:
+                session.add(self._allocate_named_counter_value(counter_name,
+                                                               session,
+                                                               resource))
             session.flush()
 
             resource_id = resource.id

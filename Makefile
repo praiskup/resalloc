@@ -6,6 +6,7 @@ SHELLTEST_OPTIONS :=
 SHELL_TESTS := \
 	basic.sh \
 	check.sh \
+	named_counters.sh \
 	ondemand.sh \
 	reuse.sh
 

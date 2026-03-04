@@ -108,6 +108,11 @@ class Resource(Base, TagMixin, Serializer):
             return self.id_in_pool_object.id
         return None
 
+    @property
+    def named_counters_dict(self):
+        """Get counter_name: value dictionary"""
+        return {i.counter_name: i.value for i in self.named_counters}
+
     def to_dict(self):
         result = super().to_dict()
         # Decode resource data for better readability
@@ -132,6 +137,23 @@ class IDWithinPool(Base):
     id = Column(Integer)
 
     resource = relationship('Resource', backref=backref('id_in_pool_object', uselist=False))
+
+
+class NamedCounter(Base):
+    """
+    Counters that are shared across multiple pools.  E.g. for "elastic IPs"
+    (you have, say, 1024 IPs that can be assigned to VMs from mutliple pools,
+    each IP has it's own IP, but can be assigned only once).
+    """
+    __tablename__ = 'named_counters'
+    __table_args__ = (
+        UniqueConstraint('value', 'counter_name'),
+    )
+
+    resource_id = Column(Integer, ForeignKey('resources.id'), primary_key=True)
+    counter_name = Column(String, index=True, primary_key=True)
+    value = Column(Integer, index=True)
+    resource = relationship('Resource', backref=backref('named_counters'))
 
 
 class ResourceTag(Base):

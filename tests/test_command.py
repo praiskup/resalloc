@@ -51,8 +51,8 @@ logdir: {logdir}
             "bash -c 'for i in $(seq 100000); do echo stdout; done; "
             "echo stderr >&2'"
         )
-        res = run_command("pool_trim", 10, "res_10", 1, command, ltype='alloc',
-                          catch_stdout_bytes=capture_bytes)
+        res = run_command("pool_trim", 10, "res_10", 1, {"foo": 1}, command,
+                          ltype='alloc', catch_stdout_bytes=capture_bytes)
         assert res["status"] == 0
         assert res["stdout"].endswith(b"<< trimmed >>\n")
         assert res["stdout"].startswith(b"stdout\n")

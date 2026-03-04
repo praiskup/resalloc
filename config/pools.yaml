@@ -144,3 +144,10 @@
 ##    # "reused".  The time spent is measured since the resource was taken for the
 ##    # first time (assigned to sandbox).  Default is 3600s.
 ##    reuse_max_time: 3600
+##
+##    # Whenever a new machine is allocated within this pool, the smallest integer values
+##    # are taken from the following named counters, and exported for the
+##    # callback scripts as environment variables, for example
+##    # NAMED_COUNTER_VALUE_foo=10 (considering values 0->9 are already taken).
+##    #named_counters:
+##    # - foo

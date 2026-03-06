@@ -174,7 +174,7 @@ Summary: %sum - daemon starting agent-like resources
 Requires: python3-copr-common >= 0.23
 Requires: python3-daemon
 Requires: python3-redis
-Requires: python3-resalloc
+Requires: python3-resalloc = %version-%release
 Requires: python3-setproctitle
 
 %description agent-spawner

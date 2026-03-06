@@ -1,5 +1,12 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v6.0
+
+* Enhancements
+
+    - Cross-pool "named counters" implemented.  Use these for calculating
+      shared resources (e.g., for counting ranges of IPv6 addresses).
+
 New in v5.11
 
 * Bugfixes

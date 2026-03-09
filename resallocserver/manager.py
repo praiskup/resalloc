@@ -379,7 +379,8 @@ class AllocWorker(Worker):
 
             if resource.state == RState.ENDED:
                 session.delete(resource.id_in_pool_object)
-
+                for counter in resource.named_counters:
+                    session.delete(counter)
 
         # Notify manager that it is worth doing re-spin.
         self.event.set()

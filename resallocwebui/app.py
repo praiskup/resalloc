@@ -1,5 +1,5 @@
 import yaml
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 from resallocserver.app import session_scope
 from resallocserver.logic import QResources
 from resallocserver import models
@@ -86,6 +86,31 @@ def pools():
             summary[key] += count
 
     return render_template("pools.html", information=result, summary=summary)
+
+
+@app.route("/api/stats")
+def api_stats():
+    """
+    Provide statistics usable for external monitoring (Nagios/Zabbix/etc)
+    """
+    # This will be a two-dimensional array,
+    # e.g. result["copr_hv_x86_64_01_prod"]["startup_success_rate"]
+    result = {}
+
+    pools_from_config = load_config()
+
+    # Prepare the two-dimensional array, and fill it with zeros
+    with session_scope() as session:
+        for pool in session.query(models.Pool).all():
+            if pool.name not in pools_from_config:
+                continue
+            result[pool.name] = {
+                "startup_success_rate": pool.startup_success_rate,
+                "startup_time_avg": pool.startup_time_avg,
+                "last_successful_start": pool.last_successful_start,
+                "last_attempt_to_start": pool.last_attempt_to_start,
+            }
+    return jsonify(result)
 
 
 if __name__ == '__main__':

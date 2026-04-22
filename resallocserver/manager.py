@@ -227,6 +227,7 @@ class Worker(threading.Thread):
         if name is not None:
             name = "{0}-{1}".format(name, res_id or pool)
         self.event = event
+        self.start_initiated = None
         threading.Thread.__init__(self, name=name)
 
     def job(self):
@@ -239,6 +240,7 @@ class Worker(threading.Thread):
     def run(self):
         self.log = app.log.getChild("worker")
         try:
+            self.start_initiated = time.time()
             self.job()
         except:
             self.log.exception("Worker exception, pool=%s resource=%s",
@@ -363,6 +365,12 @@ class AllocWorker(Worker):
         )
 
         with session_scope() as session:
+            # The assumption is, this is the place where we know a resource
+            # successfully started
+            # Another assumption is that `pool.last_start` is when we tried to
+            # start a resource not when we succesfully started it
+            success = not output['status']
+            self.recalculate_statistics(session, success)
             resource.state = RState.ENDED if output['status'] else RState.UP
             resource.data = output['stdout']
             tags = []
@@ -384,6 +392,40 @@ class AllocWorker(Worker):
 
         # Notify manager that it is worth doing re-spin.
         self.event.set()
+
+    def recalculate_statistics(self, session, success):
+        """
+        Re-calculate the pool statistics
+        """
+        dbpool = session.query(models.Pool).get(self.pool.id)
+
+        start_finished = time.time()
+        startup_time = start_finished - self.start_initiated
+
+        # We are going to use exponential moving averages because for
+        # a standard average we would need the have a count how many values
+        # we averaged previously, so that we can now average count+1.
+        # Approximation is good enough here, so we are using the moving average.
+        # The alpha should be between 0.1 and 0.9, the higher the value, the
+        # better it reacts to sudden spikes in failures
+        alpha = 0.5
+
+        if dbpool.startup_time_avg is None:
+            dbpool.startup_time_avg = startup_time
+        else:
+            dbpool.startup_time_avg = \
+                alpha * startup_time + (1 - alpha) * dbpool.startup_time_avg
+
+        if dbpool.startup_success_rate is None:
+            dbpool.startup_success_rate = int(success)
+        else:
+            dbpool.startup_success_rate = \
+                alpha * int(success) + (1 - alpha) * dbpool.startup_success_rate
+
+        dbpool.last_attempt_to_start = start_finished
+        if success:
+            dbpool.last_successful_start = start_finished
+        session.add(dbpool)
 
 
 class CleanUnknownWorker(Worker):

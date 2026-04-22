@@ -39,6 +39,10 @@ class Pool(Base):
     __tablename__ = 'pools'
     name = Column(String, primary_key=True)
     last_start = Column(Float, default=0)
+    last_successful_start = Column(Float, default=None)
+    last_attempt_to_start = Column(Float, default=None)
+    startup_success_rate = Column(Float, default=None)
+    startup_time_avg = Column(Float, default=None)
     cleaning_unknown_resources = Column(DateTime, server_default=func.now())
     max = Column(Integer, default=0)
 

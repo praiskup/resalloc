@@ -22,6 +22,7 @@ import base64
 import os
 import errno
 import time
+import select
 import threading
 import subprocess
 import warnings
@@ -57,7 +58,8 @@ def command_env(pool_id=None, res_id=None, res_name=None,
 
 def run_command(pool_id, res_id, res_name, id_in_pool, named_counters, command,
                 ltype='alloc', catch_stdout_bytes=None, data=None,
-                catch_stdout_lines_securely=False, timeout=None):
+                catch_stdout_lines_securely=False, timeout=None,
+                discard_partial_line=True):
     """
     Run command, and log into according directory (per.app.config).  If
     catch_stdout_bytes is specified, we read & log continuously.
@@ -66,13 +68,15 @@ def run_command(pool_id, res_id, res_name, id_in_pool, named_counters, command,
     logdir = os.path.join(config['logdir'], 'hooks')
     return _run_command(app.log, logdir, pool_id, res_id, res_name, id_in_pool,
                         named_counters, command, ltype, catch_stdout_bytes,
-                        data, catch_stdout_lines_securely, timeout)
+                        data, catch_stdout_lines_securely, timeout,
+                        discard_partial_line)
 
 
 def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool,
                  named_counters, command, ltype='alloc',
                  catch_stdout_bytes=None, data=None,
-                 catch_stdout_lines_securely=False, timeout=None):
+                 catch_stdout_lines_securely=False, timeout=None,
+                 discard_partial_line=True):
     """
     Internal variant for _run_command() that is easier to test locally like:
     In [1] import logging
@@ -81,10 +85,7 @@ def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool,
     started ; sleep 100", timeout=2)
     Out[3]: {'status': 124}
     """
-
-    # we do not support timeout when catching lines
-    assert not (timeout and catch_stdout_lines_securely)
-
+    # pylint: disable=too-many-statements
     log.debug("running: " + command)
     env = command_env(pool_id, res_id, res_name, id_in_pool, named_counters,
                       data)
@@ -115,29 +116,78 @@ def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool,
         with subprocess.Popen(command, env=env, shell=True,
                               stdout=subprocess.PIPE, stderr=logfile) as sp:
             captured_string = b""
+            timeout = timeout or 60 * 60 * 24
+            deadline = time.monotonic() + timeout
+            buffer = b""
 
-            for line in iter(sp.stdout.readline, b''):
-                # Write to the log.
-                logfile.write(line)
-                logfile.flush()
+            while True:
+                # How many seconds are left before we want to timeout
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    logfile.write(f"<timeouted after {timeout}s (too much output)>\n".encode())
+                    sp.kill()
+                    return {'status': 124, 'stdout': captured_string}
 
-                if stdout_stopped:
-                    continue
+                # Either we get a readable file descriptors back or we get nothing
+                # because the `select` timeouted on `read`
+                rlist = [sp.stdout.fileno()]
+                ready, _, _ = select.select(rlist, [], [], remaining)
+                if not ready:
+                    logfile.write(f"<timeouted after {timeout}s (on read)>\n".encode())
+                    sp.kill()
+                    return {'status': 124, 'stdout': captured_string}
 
-                if stdout_written + len(line) > catch_stdout_bytes:
-                    if stdout_written == 0 and not catch_stdout_lines_securely:
-                        # Even the first line is too long for this buffer.  Catch at
-                        # least part of it.
-                        line = line[:catch_stdout_bytes]
-                        captured_string += line
+                # To support multiple input streams, we should iterate over
+                # `ready` instead of reading stdout directly. But there also
+                # need to be some additional changes like separate EOF handling
+                # for every input stream
+                chunk = os.read(sp.stdout.fileno(), 4096)
+                eof = chunk == b''
 
-                    stdout_stopped = True
-                    if not catch_stdout_lines_securely:
-                        captured_string += b"<< trimmed >>\n"
-                    continue
+                # We successfully read a chunk of data
+                if not eof:
+                    buffer += chunk
+                # We encountered EOF but we still have unprocessed bytes
+                elif buffer:
+                    # Discard the partial line or treat it as a complete line?
+                    if discard_partial_line:
+                        buffer = b''
+                    else:
+                        buffer += b'\n'
+                # We encountered EOF and we already processed everything
+                else:
+                    break
 
-                stdout_written += len(line)
-                captured_string += line
+                # Process all complete lines from buffer
+                while b'\n' in buffer:
+                    line, buffer = buffer.split(b'\n', 1)
+                    line += b'\n'
+
+                    # Write to the log.
+                    logfile.write(line)
+                    logfile.flush()
+
+                    if stdout_stopped:
+                        continue
+
+                    if stdout_written + len(line) > catch_stdout_bytes:
+                        if stdout_written == 0 and not catch_stdout_lines_securely:
+                            # Even the first line is too long for this buffer.
+                            # Catch at # least part of it.
+                            line = line[:catch_stdout_bytes]
+                            captured_string += line
+
+                        stdout_stopped = True
+                        if not catch_stdout_lines_securely:
+                            captured_string += b"<< trimmed >>\n"
+                        continue
+
+                    stdout_written += len(line)
+                    captured_string += line
+
+                # This is to handle EOF after processing a partial line
+                if eof:
+                    break
 
             return {
                 'status': sp.wait(),
@@ -478,6 +528,7 @@ class CleanUnknownWorker(Worker):
             ltype="list",
             catch_stdout_bytes=5120,
             catch_stdout_lines_securely=True,
+            timeout=120,
         )
         return result["stdout"].decode("utf-8").strip().split()
 

@@ -58,8 +58,7 @@ def command_env(pool_id=None, res_id=None, res_name=None,
 
 def run_command(pool_id, res_id, res_name, id_in_pool, named_counters, command,
                 ltype='alloc', catch_stdout_bytes=None, data=None,
-                catch_stdout_lines_securely=False, timeout=None,
-                discard_partial_line=True):
+                catch_stdout_lines_securely=False, timeout=None):
     """
     Run command, and log into according directory (per.app.config).  If
     catch_stdout_bytes is specified, we read & log continuously.
@@ -68,11 +67,10 @@ def run_command(pool_id, res_id, res_name, id_in_pool, named_counters, command,
     logdir = os.path.join(config['logdir'], 'hooks')
     return _run_command(app.log, logdir, pool_id, res_id, res_name, id_in_pool,
                         named_counters, command, ltype, catch_stdout_bytes,
-                        data, catch_stdout_lines_securely, timeout,
-                        discard_partial_line)
+                        data, catch_stdout_lines_securely, timeout)
 
 
-def yield_lines_from_fds(fds, timeout=None, discard_partial_line=True):
+def yield_lines_from_fds(fds, timeout=None):
     """
     Generator that reads lines from file descriptors, yielding (fd, line) pairs.
     Raises TimeoutError when the deadline is exceeded.
@@ -93,30 +91,25 @@ def yield_lines_from_fds(fds, timeout=None, discard_partial_line=True):
 
         for fd in ready:
             chunk = os.read(fd, 4096)
-            eof = chunk == b''
 
-            if not eof:
+            if chunk:
                 buffers[fd] += chunk
-            elif buffers[fd]:
-                if discard_partial_line:
-                    buffers[fd] = b''
-                else:
-                    buffers[fd] += b'\n'
+                while b'\n' in buffers[fd]:
+                    line, buffers[fd] = buffers[fd].split(b'\n', 1)
+                    line += b'\n'
+                    yield (fd, line)
+                continue
 
-            while b'\n' in buffers[fd]:
-                line, buffers[fd] = buffers[fd].split(b'\n', 1)
-                line += b'\n'
-                yield (fd, line)
-
-            if eof:
-                active_fds.discard(fd)
+            # EOF
+            if buffers[fd]:
+                yield (fd, buffers[fd])
+            active_fds.discard(fd)
 
 
 def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool,
                  named_counters, command, ltype='alloc',
                  catch_stdout_bytes=None, data=None,
-                 catch_stdout_lines_securely=False, timeout=None,
-                 discard_partial_line=True):
+                 catch_stdout_lines_securely=False, timeout=None):
     """
     Internal variant for _run_command() that is easier to test locally like:
     In [1] import logging
@@ -157,7 +150,6 @@ def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool,
                 for _, line in yield_lines_from_fds(
                     [sp.stdout.fileno()],
                     timeout=timeout,
-                    discard_partial_line=discard_partial_line,
                 ):
                     logfile.write(line)
                     logfile.flush()

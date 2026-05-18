@@ -22,15 +22,16 @@ import base64
 import os
 import errno
 import time
-import select
 import threading
 import subprocess
 import warnings
 from datetime import datetime
+
 from resalloc import helpers
 from resalloc.helpers import RState
 from resallocserver import models
 from resallocserver.app import session_scope, app
+from resallocserver.helpers import yield_lines_from_fds
 from resallocserver.logic import (
         QResources, QTickets, assign_ticket, release_resource
 )
@@ -69,41 +70,6 @@ def run_command(pool_id, res_id, res_name, id_in_pool, named_counters, command,
                         named_counters, command, ltype, catch_stdout_bytes,
                         data, catch_stdout_lines_securely, timeout)
 
-
-def yield_lines_from_fds(fds, timeout=None):
-    """
-    Generator that reads lines from file descriptors, yielding (fd, line) pairs.
-    Raises TimeoutError when the deadline is exceeded.
-    """
-    timeout = timeout or 60 * 60 * 24
-    deadline = time.monotonic() + timeout
-    buffers = {fd: b"" for fd in fds}
-    active_fds = set(fds)
-
-    while active_fds:
-        remaining = deadline - time.monotonic()
-        if remaining <= 0:
-            raise TimeoutError(f"timeouted after {timeout}s")
-
-        ready, _, _ = select.select(list(active_fds), [], [], remaining)
-        if not ready:
-            raise TimeoutError(f"timeouted after {timeout}s (on read)")
-
-        for fd in ready:
-            chunk = os.read(fd, 4096)
-
-            if chunk:
-                buffers[fd] += chunk
-                while b'\n' in buffers[fd]:
-                    line, buffers[fd] = buffers[fd].split(b'\n', 1)
-                    line += b'\n'
-                    yield (fd, line)
-                continue
-
-            # EOF
-            if buffers[fd]:
-                yield (fd, buffers[fd])
-            active_fds.discard(fd)
 
 
 def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool,

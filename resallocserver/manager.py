@@ -31,7 +31,7 @@ from resalloc import helpers
 from resalloc.helpers import RState
 from resallocserver import models
 from resallocserver.app import session_scope, app
-from resallocserver.helpers import yield_lines_from_fds
+from resallocserver.helpers import LineBufferOverflow, yield_lines_from_fds
 from resallocserver.logic import (
         QResources, QTickets, assign_ticket, release_resource
 )
@@ -116,6 +116,7 @@ def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool,
                 for _, line in yield_lines_from_fds(
                     [sp.stdout.fileno()],
                     timeout=timeout,
+                    max_line_length=10240 if catch_stdout_lines_securely else None,
                 ):
                     logfile.write(line)
                     logfile.flush()
@@ -136,7 +137,7 @@ def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool,
                     stdout_written += len(line)
                     captured_string += line
 
-            except TimeoutError as e:
+            except (TimeoutError, LineBufferOverflow) as e:
                 logfile.write(f"<{e}>\n".encode())
                 sp.kill()
                 return {'status': 124, 'stdout': captured_string}

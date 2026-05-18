@@ -72,6 +72,46 @@ def run_command(pool_id, res_id, res_name, id_in_pool, named_counters, command,
                         discard_partial_line)
 
 
+def yield_lines_from_fds(fds, timeout=None, discard_partial_line=True):
+    """
+    Generator that reads lines from file descriptors, yielding (fd, line) pairs.
+    Raises TimeoutError when the deadline is exceeded.
+    """
+    timeout = timeout or 60 * 60 * 24
+    deadline = time.monotonic() + timeout
+    buffers = {fd: b"" for fd in fds}
+    active_fds = set(fds)
+
+    while active_fds:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError(f"timeouted after {timeout}s")
+
+        ready, _, _ = select.select(list(active_fds), [], [], remaining)
+        if not ready:
+            raise TimeoutError(f"timeouted after {timeout}s (on read)")
+
+        for fd in ready:
+            chunk = os.read(fd, 4096)
+            eof = chunk == b''
+
+            if not eof:
+                buffers[fd] += chunk
+            elif buffers[fd]:
+                if discard_partial_line:
+                    buffers[fd] = b''
+                else:
+                    buffers[fd] += b'\n'
+
+            while b'\n' in buffers[fd]:
+                line, buffers[fd] = buffers[fd].split(b'\n', 1)
+                line += b'\n'
+                yield (fd, line)
+
+            if eof:
+                active_fds.discard(fd)
+
+
 def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool,
                  named_counters, command, ltype='alloc',
                  catch_stdout_bytes=None, data=None,
@@ -85,7 +125,6 @@ def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool,
     started ; sleep 100", timeout=2)
     Out[3]: {'status': 124}
     """
-    # pylint: disable=too-many-statements
     log.debug("running: " + command)
     env = command_env(pool_id, res_id, res_name, id_in_pool, named_counters,
                       data)
@@ -105,65 +144,21 @@ def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool,
                                                   timeout=timeout)}
             except subprocess.TimeoutExpired:
                 logfile.write(f"<timeouted after {timeout}s>\n".encode())
-                # default /bin/timeout utility exit status
                 return {'status': 124}
 
         stdout_written = 0
         stdout_stopped = False
 
-        # Run the sub-command to be captured.
-
         with subprocess.Popen(command, env=env, shell=True,
                               stdout=subprocess.PIPE, stderr=logfile) as sp:
             captured_string = b""
-            timeout = timeout or 60 * 60 * 24
-            deadline = time.monotonic() + timeout
-            buffer = b""
 
-            while True:
-                # How many seconds are left before we want to timeout
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    logfile.write(f"<timeouted after {timeout}s (too much output)>\n".encode())
-                    sp.kill()
-                    return {'status': 124, 'stdout': captured_string}
-
-                # Either we get a readable file descriptors back or we get nothing
-                # because the `select` timeouted on `read`
-                rlist = [sp.stdout.fileno()]
-                ready, _, _ = select.select(rlist, [], [], remaining)
-                if not ready:
-                    logfile.write(f"<timeouted after {timeout}s (on read)>\n".encode())
-                    sp.kill()
-                    return {'status': 124, 'stdout': captured_string}
-
-                # To support multiple input streams, we should iterate over
-                # `ready` instead of reading stdout directly. But there also
-                # need to be some additional changes like separate EOF handling
-                # for every input stream
-                chunk = os.read(sp.stdout.fileno(), 4096)
-                eof = chunk == b''
-
-                # We successfully read a chunk of data
-                if not eof:
-                    buffer += chunk
-                # We encountered EOF but we still have unprocessed bytes
-                elif buffer:
-                    # Discard the partial line or treat it as a complete line?
-                    if discard_partial_line:
-                        buffer = b''
-                    else:
-                        buffer += b'\n'
-                # We encountered EOF and we already processed everything
-                else:
-                    break
-
-                # Process all complete lines from buffer
-                while b'\n' in buffer:
-                    line, buffer = buffer.split(b'\n', 1)
-                    line += b'\n'
-
-                    # Write to the log.
+            try:
+                for _, line in yield_lines_from_fds(
+                    [sp.stdout.fileno()],
+                    timeout=timeout,
+                    discard_partial_line=discard_partial_line,
+                ):
                     logfile.write(line)
                     logfile.flush()
 
@@ -172,8 +167,6 @@ def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool,
 
                     if stdout_written + len(line) > catch_stdout_bytes:
                         if stdout_written == 0 and not catch_stdout_lines_securely:
-                            # Even the first line is too long for this buffer.
-                            # Catch at # least part of it.
                             line = line[:catch_stdout_bytes]
                             captured_string += line
 
@@ -185,9 +178,10 @@ def _run_command(log, logdir, pool_id, res_id, res_name, id_in_pool,
                     stdout_written += len(line)
                     captured_string += line
 
-                # This is to handle EOF after processing a partial line
-                if eof:
-                    break
+            except TimeoutError as e:
+                logfile.write(f"<{e}>\n".encode())
+                sp.kill()
+                return {'status': 124, 'stdout': captured_string}
 
             return {
                 'status': sp.wait(),

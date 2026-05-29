@@ -1,5 +1,18 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+New in v6.2
+
+* Enhancements
+    - Provide an API endpoint with pool statistics usable for monitoring #124
+
+
+* Bugfixes
+
+    - Fix #178 - The `cmd_list` is now being run with a timeout and therefore
+      cannot hang forever and leak file descriptors.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 New in v6.1
 
 * Bugfixes

@@ -413,11 +413,12 @@ class AllocWorker(Worker):
         # better it reacts to sudden spikes in failures
         alpha = 0.5
 
-        if dbpool.startup_time_avg is None:
-            dbpool.startup_time_avg = startup_time
-        else:
-            dbpool.startup_time_avg = \
-                alpha * startup_time + (1 - alpha) * dbpool.startup_time_avg
+        if success:
+            if dbpool.startup_time_avg is None:
+                dbpool.startup_time_avg = startup_time
+            else:
+                dbpool.startup_time_avg = \
+                    alpha * startup_time + (1 - alpha) * dbpool.startup_time_avg
 
         if dbpool.startup_success_rate is None:
             dbpool.startup_success_rate = int(success)

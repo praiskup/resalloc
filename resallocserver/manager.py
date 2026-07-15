@@ -411,7 +411,7 @@ class AllocWorker(Worker):
         # Approximation is good enough here, so we are using the moving average.
         # The alpha should be between 0.1 and 0.9, the higher the value, the
         # better it reacts to sudden spikes in failures
-        alpha = 0.5
+        alpha = 0.2
 
         if success:
             if dbpool.startup_time_avg is None:

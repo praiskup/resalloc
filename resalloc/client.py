@@ -4,8 +4,10 @@ Client resalloc Python API.
 from __future__ import print_function
 
 import socket
+import ssl
 import time
 import sys
+import os
 
 try:
     import xmlrpclib
@@ -18,9 +20,35 @@ except ImportError:
     RPCEXCEPTION = xmlrpc.client.Error
 
 
+# Hardcoded on purpose now, load it from the config
+CLIENT_KEY_FILE = '~/.config/resalloc-client-key'
+SERVER_CERT_FILE = '~/.config/resalloc-server-cert'
+
+
+def ssl_context():
+    """
+    Client SSL Context
+    """
+    server_cert = os.path.expanduser(SERVER_CERT_FILE)
+    client_key = os.path.expanduser(CLIENT_KEY_FILE)
+
+    try:
+        tls_context = ssl.create_default_context(
+            cafile=server_cert if os.path.exists(server_cert) else None)
+
+        if os.path.exists(client_key):
+            tls_context.load_cert_chain(client_key)
+    except (ssl.SSLError, OSError) as err:
+        # pylint: disable=raise-missing-from
+        raise ResallocClientException(
+            "Invalid client TLS configuration: {0}".format(err))
+
+    return tls_context
+
+
 class _WrappedXMLRPCClient(object):
     def __init__(self, connection_string, survive_server_restart):
-        self._conn = C_XMLRPC(connection_string)
+        self._conn = C_XMLRPC(connection_string, context=ssl_context())
         self.survive_server_restart = survive_server_restart
 
     def call(self, name, *args):
@@ -33,6 +61,11 @@ class _WrappedXMLRPCClient(object):
         while True:
             try:
                 return fcall(*args)
+            except ssl.SSLError as ssl_err:
+                # pylint: disable=raise-missing-from
+                raise ResallocClientException(
+                    "TLS error while talking to the server: {0}".format(
+                        ssl_err))
             except socket.error as sock_err:
                 print(str(sock_err), file=sys.stderr)
                 if not self.survive_server_restart:

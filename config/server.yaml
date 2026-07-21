@@ -19,3 +19,13 @@ logdir: '/var/log/resallocserver'
 
 # Set to 'debug' to get more verbose logging.
 #loglevel: info
+
+# Certificate and private key for the xmlrpc server.  When ssl_certfile is not
+# set, the server speaks HTTP. When ssl_keyfile is not
+# set, the private key is expected in the ssl_certfile itself.
+#ssl_certfile: '/etc/resallocserver/server.crt'
+#ssl_keyfile: '/etc/resallocserver/server.key'
+
+# PEM file with the concatenated certificates of all the clients allowed to
+# connect. Requires ssl_certfile.
+#ssl_clients: '/etc/resallocserver/clients.pem'

@@ -57,6 +57,7 @@ URL:        https://github.com/praiskup/resalloc
 BuildArch:  noarch
 
 BuildRequires: make
+BuildRequires: openssl
 BuildRequires: postgresql-server
 
 

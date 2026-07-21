@@ -21,12 +21,14 @@ import os
 import time
 import threading
 
+import alembic.config
+
 from resalloc import helpers
 from resallocserver import models, api
 from resallocserver.app import app, session_scope
 from resallocserver.manager import Manager
 from resallocserver.logic import QResources
-import alembic.config
+from resallocserver.tls import ServerTLS
 
 PORT = 8000
 CLSXMLRPC = None
@@ -86,9 +88,11 @@ class Synchronizer(object):
 
 class Server(threading.Thread):
     server = None
+    tls = None
 
     def run(self):
         config = app.config
+        tls = self.tls
         # prefer "hostname" over "host", and fallback to "localhost"
         hostname = config.get("hostname") or config.get("host") or "localhost"
         self.server = CLSXMLRPC((hostname, config['port']))
@@ -96,6 +100,8 @@ class Server(threading.Thread):
         self.server.daemon_threads = True
         self.server.register_introspection_functions()
         self.server.register_instance(api.ServerAPI(self.sync))
+        # pylint: disable=attribute-defined-outside-init
+        self.server.socket = tls.build_tls_socket(self.server.socket)
         self.server.serve_forever()
 
     def shutdown(self):
@@ -120,6 +126,8 @@ def init_by_models():
 
 def main():
     """ module entrypoint """
+    tls = ServerTLS(app.config)
+
     # Create the database, if not exist yet.
     init_by_alembic()
 
@@ -134,6 +142,7 @@ def main():
     # Start server on background.
     server = Server()
     server.sync = sync
+    server.tls = tls
     server.start()
 
     try:

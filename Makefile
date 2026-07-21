@@ -8,7 +8,8 @@ SHELL_TESTS := \
 	check.sh \
 	named_counters.sh \
 	ondemand.sh \
-	reuse.sh
+	reuse.sh \
+	tls.sh
 
 TEST_PYTHONS   := python3
 TEST_DATABASES := sqlite postgresql
